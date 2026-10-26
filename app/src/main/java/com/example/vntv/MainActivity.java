@@ -49,7 +49,7 @@ public class MainActivity extends AppCompatActivity {
         emptyView = findViewById(R.id.empty_view);
         progressBar = findViewById(R.id.progress_bar);
         recyclerView.setLayoutManager(new GridLayoutManager(this, 4));
-        categoryTabs.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        categoryTabs.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         adapter = new ChannelAdapter(new ArrayList<>(), this::openChannel);
         adapter.setOnChannelLongClickListener(this::setAsDefaultChannel);
         recyclerView.setAdapter(adapter);

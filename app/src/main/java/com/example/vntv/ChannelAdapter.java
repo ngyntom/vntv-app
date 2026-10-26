@@ -73,6 +73,12 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.VH> {
             holder.logo.setVisibility(View.GONE);
             holder.logo.setImageDrawable(null);
         }
+        if (!TextUtils.isEmpty(c.quality)) {
+            holder.quality.setVisibility(View.VISIBLE);
+            holder.quality.setText(c.quality);
+        } else {
+            holder.quality.setVisibility(View.GONE);
+        }
     }
 
     @Override
@@ -82,10 +88,12 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.VH> {
 
     static class VH extends RecyclerView.ViewHolder {
         TextView name;
+        TextView quality;
         ImageView logo;
         VH(View itemView) {
             super(itemView);
             name = itemView.findViewById(R.id.channel_name);
+            quality = itemView.findViewById(R.id.channel_quality);
             logo = itemView.findViewById(R.id.channel_logo);
         }
     }

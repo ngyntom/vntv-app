@@ -2,20 +2,25 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
+    android:orientation="horizontal"
     android:background="#101010">
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/category_tabs"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:paddingHorizontal="16dp"
-        android:paddingVertical="8dp"
+        android:layout_width="220dp"
+        android:layout_height="match_parent"
+        android:background="#161616"
+        android:paddingVertical="16dp"
         android:clipToPadding="false" />
 
+    <View
+        android:layout_width="1dp"
+        android:layout_height="match_parent"
+        android:background="#2A2A2A" />
+
     <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
         android:layout_weight="1">
 
         <androidx.recyclerview.widget.RecyclerView

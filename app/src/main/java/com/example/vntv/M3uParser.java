@@ -13,6 +13,10 @@ import java.util.regex.Pattern;
 public class M3uParser {
     private static final Pattern ATTR_LOGO = Pattern.compile("tvg-logo=\"([^\"]*)\"");
     private static final Pattern ATTR_GROUP = Pattern.compile("group-title=\"([^\"]*)\"");
+    // Trailing quality tag in the display name, e.g. "VTV1 (720)", "HTV7 HD", "K+ (1080p)".
+    private static final Pattern QUALITY_SUFFIX = Pattern.compile(
+            "\\s*[\\(\\[]?\\s*(4K|FHD|UHD|HD|SD|\\d{3,4}p?)\\s*[\\)\\]]?\\s*$",
+            Pattern.CASE_INSENSITIVE);
 
     public static List<Channel> parse(InputStream in) throws IOException {
         List<Channel> result = new ArrayList<>();
@@ -31,7 +35,13 @@ public class M3uParser {
                 pendingGroup = groupM.find() ? groupM.group(1) : null;
             } else if (!line.startsWith("#")) {
                 if (pendingName != null) {
-                    result.add(new Channel(pendingName, pendingLogo, line, pendingGroup));
+                    String quality = null;
+                    Matcher qualityM = QUALITY_SUFFIX.matcher(pendingName);
+                    if (qualityM.find() && qualityM.start() > 0) {
+                        quality = qualityM.group(1).toUpperCase();
+                        pendingName = pendingName.substring(0, qualityM.start()).trim();
+                    }
+                    result.add(new Channel(pendingName, quality, pendingLogo, line, pendingGroup));
                     pendingName = null;
                     pendingLogo = null;
                     pendingGroup = null;

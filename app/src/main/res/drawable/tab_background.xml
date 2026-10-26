@@ -3,19 +3,19 @@
     <item android:state_focused="true">
         <shape android:shape="rectangle">
             <solid android:color="#3399FF" />
-            <corners android:radius="20dp" />
+            <corners android:radius="8dp" />
         </shape>
     </item>
     <item android:state_selected="true">
         <shape android:shape="rectangle">
             <solid android:color="#1565C0" />
-            <corners android:radius="20dp" />
+            <corners android:radius="8dp" />
         </shape>
     </item>
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="#2A2A2A" />
-            <corners android:radius="20dp" />
+            <solid android:color="@android:color/transparent" />
+            <corners android:radius="8dp" />
         </shape>
     </item>
 </selector>
