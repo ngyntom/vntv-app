@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -25,7 +24,6 @@ public class PlayerActivity extends AppCompatActivity {
 
     private ExoPlayer player;
     private PlayerView playerView;
-    private TextView nowPlayingName;
     private RecyclerView channelListOverlay;
     private ChannelAdapter overlayAdapter;
     private List<Channel> channels;
@@ -37,7 +35,6 @@ public class PlayerActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_player);
         playerView = findViewById(R.id.player_view);
-        nowPlayingName = findViewById(R.id.now_playing_name);
         channelListOverlay = findViewById(R.id.channel_list_overlay);
 
         channels = ChannelHolder.current;
@@ -79,7 +76,6 @@ public class PlayerActivity extends AppCompatActivity {
             String url = getIntent().getStringExtra(EXTRA_URL);
             String name = getIntent().getStringExtra(EXTRA_NAME);
             if (url != null) {
-                nowPlayingName.setText(name);
                 player.setMediaItem(MediaItem.fromUri(url));
                 player.prepare();
                 player.play();
@@ -108,7 +104,6 @@ public class PlayerActivity extends AppCompatActivity {
 
     private void play(Channel channel) {
         if (player == null) return;
-        nowPlayingName.setText(channel.name);
         player.setMediaItem(MediaItem.fromUri(channel.streamUrl));
         player.prepare();
         player.play();
@@ -125,7 +120,20 @@ public class PlayerActivity extends AppCompatActivity {
     private void setOverlayVisible(boolean visible) {
         overlayVisible = visible;
         channelListOverlay.setVisibility(visible ? View.VISIBLE : View.GONE);
-        if (visible) channelListOverlay.requestFocus();
+        if (!visible) return;
+        if (currentIndex >= 0 && currentIndex < channels.size()) {
+            channelListOverlay.scrollToPosition(currentIndex);
+            channelListOverlay.post(() -> {
+                RecyclerView.ViewHolder vh = channelListOverlay.findViewHolderForAdapterPosition(currentIndex);
+                if (vh != null) {
+                    vh.itemView.requestFocus();
+                } else {
+                    channelListOverlay.requestFocus();
+                }
+            });
+        } else {
+            channelListOverlay.requestFocus();
+        }
     }
 
     @Override
