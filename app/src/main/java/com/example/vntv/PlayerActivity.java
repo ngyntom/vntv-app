@@ -73,6 +73,9 @@ public class PlayerActivity extends AppCompatActivity {
         if (currentIndex >= 0 && currentIndex < channels.size()) {
             play(channels.get(currentIndex));
         } else {
+            // Instant-resume path: MainActivity handed us a URL straight from local storage,
+            // with no channel list yet (it's still fetching in the background). Play it now;
+            // pickUpChannelList() below swaps in the real list (and index) once it's ready.
             String url = getIntent().getStringExtra(EXTRA_URL);
             String name = getIntent().getStringExtra(EXTRA_NAME);
             if (url != null) {
@@ -80,9 +83,27 @@ public class PlayerActivity extends AppCompatActivity {
                 player.setMediaItem(MediaItem.fromUri(url));
                 player.prepare();
                 player.play();
-                PlaylistStore.setLastPlayed(this, url);
+                PlaylistStore.setLastPlayed(this, url, name);
             }
         }
+
+        if (channels.isEmpty()) {
+            ChannelHolder.setListener(this::pickUpChannelList);
+        }
+    }
+
+    /** Called once MainActivity's background fetch finishes, if we started with no list yet. */
+    private void pickUpChannelList(List<Channel> freshChannels) {
+        channels = freshChannels;
+        overlayAdapter.setChannels(channels);
+        String playingUrl = getIntent().getStringExtra(EXTRA_URL);
+        for (int i = 0; i < channels.size(); i++) {
+            if (channels.get(i).streamUrl.equals(playingUrl)) {
+                currentIndex = i;
+                break;
+            }
+        }
+        ChannelHolder.setListener(null);
     }
 
     private void play(Channel channel) {
@@ -91,7 +112,7 @@ public class PlayerActivity extends AppCompatActivity {
         player.setMediaItem(MediaItem.fromUri(channel.streamUrl));
         player.prepare();
         player.play();
-        PlaylistStore.setLastPlayed(this, channel.streamUrl);
+        PlaylistStore.setLastPlayed(this, channel.streamUrl, channel.name);
     }
 
     private void switchTo(Channel channel) {
@@ -140,19 +161,22 @@ public class PlayerActivity extends AppCompatActivity {
             setOverlayVisible(false);
             return;
         }
-        if (isTaskRoot()) {
-            // Nothing beneath us in the stack (e.g. the TV's own launcher jumped straight into
-            // playback) - go to the channel picker instead of falling through to Home.
-            Intent intent = new Intent(this, MainActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            startActivity(intent);
-        }
-        super.onBackPressed();
+        // Explicitly navigate to MainActivity instead of trusting finish() to reveal whatever
+        // the OS thinks is beneath us: on this TV, finishing here sometimes dropped straight to
+        // the launcher's Home even with MainActivity still alive in the same task underneath
+        // (confirmed via dumpsys - a quirk of this firmware's task/stack handling, not a back
+        // stack that was actually empty). CLEAR_TOP+SINGLE_TOP reuses that existing instance
+        // rather than recreating it, so its scroll position/selection survive.
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(intent);
+        finish();
     }
 
     @Override
     protected void onStop() {
         super.onStop();
+        ChannelHolder.setListener(null);
         if (player != null) {
             player.release();
             player = null;

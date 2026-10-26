@@ -17,6 +17,9 @@ public class M3uParser {
     private static final Pattern QUALITY_SUFFIX = Pattern.compile(
             "\\s*[\\(\\[]?\\s*(4K|FHD|UHD|HD|SD|\\d{3,4}p?)\\s*[\\)\\]]?\\s*$",
             Pattern.CASE_INSENSITIVE);
+    // Trailing bracketed notes some sources tack on, e.g. "An Giang TV 1 [Geo-blocked]";
+    // stripped entirely (unlike the quality tag, there's no info worth keeping).
+    private static final Pattern BRACKET_SUFFIX = Pattern.compile("\\s*\\[[^\\[\\]]*\\]\\s*$");
 
     public static List<Channel> parse(InputStream in, String sourceUrl) throws IOException {
         List<Channel> result = new ArrayList<>();
@@ -35,6 +38,12 @@ public class M3uParser {
                 pendingGroup = groupM.find() ? groupM.group(1) : null;
             } else if (!line.startsWith("#")) {
                 if (pendingName != null) {
+                    // A bracketed note (if any) always trails the quality tag in these sources
+                    // ("Name (1080p) [Geo-blocked]"), so strip it first.
+                    Matcher bracketM = BRACKET_SUFFIX.matcher(pendingName);
+                    if (bracketM.find()) {
+                        pendingName = pendingName.substring(0, bracketM.start()).trim();
+                    }
                     String quality = null;
                     Matcher qualityM = QUALITY_SUFFIX.matcher(pendingName);
                     if (qualityM.find() && qualityM.start() > 0) {

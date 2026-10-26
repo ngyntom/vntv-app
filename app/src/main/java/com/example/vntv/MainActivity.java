@@ -66,7 +66,29 @@ public class MainActivity extends AppCompatActivity {
         categoryAdapter = new CategoryAdapter(CATEGORIES, 1, this::onCategorySelected);
         categoryTabs.setAdapter(categoryAdapter);
 
+        // Only on a genuine fresh launch - not when Android is recreating this Activity to
+        // restore a back stack whose process got killed (e.g. this TV reclaiming RAM while
+        // PlayerActivity was in front). That recreation also passes through onCreate(), and
+        // auto-resuming there would hijack the user's own Back press into bouncing straight
+        // back into playback instead of landing on the channel grid.
+        if (savedInstanceState == null) {
+            instantResumeIfPossible();
+        }
         loadChannels();
+    }
+
+    /** Resuming the last-played channel shouldn't wait on a full playlist re-fetch over the
+     *  network - the URL and name are already on disk, so jump straight into playback with
+     *  those; loadChannels() still runs right after to fill in the real list for Up/Down and
+     *  the in-player overlay, picked up live by ChannelHolder once it's ready. */
+    private void instantResumeIfPossible() {
+        String lastUrl = PlaylistStore.getLastPlayed(this);
+        if (lastUrl == null) return;
+        autoLaunched = true;
+        Intent intent = new Intent(this, PlayerActivity.class);
+        intent.putExtra(PlayerActivity.EXTRA_URL, lastUrl);
+        intent.putExtra(PlayerActivity.EXTRA_NAME, PlaylistStore.getLastPlayedName(this));
+        startActivity(intent);
     }
 
     @Override
@@ -172,18 +194,31 @@ public class MainActivity extends AppCompatActivity {
                 if (all.isEmpty()) {
                     Toast.makeText(this, R.string.load_failed, Toast.LENGTH_LONG).show();
                 }
-                if (!maybeAutoResume(all)) {
+                if (!finishInstantResume(all) && !maybeAutoResume(all)) {
                     filterByCategory(currentCategory());
                 }
             });
         });
     }
 
-    /** Resumes the channel that was last playing; falls back to the first favorite. */
+    /** If instantResumeIfPossible() already started playback, this just hands PlayerActivity
+     *  the real, ordered channel list (via the listener it registered) now that it's in -
+     *  no second launch needed. */
+    private boolean finishInstantResume(List<Channel> all) {
+        String lastUrl = PlaylistStore.getLastPlayed(this);
+        if (lastUrl == null || !autoLaunched) return false;
+        for (Channel c : all) {
+            if (lastUrl.equals(c.streamUrl)) {
+                ChannelHolder.update(buildPlaybackOrder(c));
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** First run with no saved "last played" yet: falls back to the first favorite. */
     private boolean maybeAutoResume(List<Channel> all) {
         if (autoLaunched) return false;
-        String lastUrl = PlaylistStore.getLastPlayed(this);
-        if (lastUrl != null && launchIfPresent(all, lastUrl)) return true;
         List<String> favorites = PlaylistStore.getFavorites(this);
         if (!favorites.isEmpty() && launchIfPresent(all, favorites.get(0))) return true;
         return false;

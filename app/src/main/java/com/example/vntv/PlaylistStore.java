@@ -47,13 +47,21 @@ public class PlaylistStore {
     }
 
     private static final String KEY_LAST_PLAYED = "last_played_url";
+    private static final String KEY_LAST_PLAYED_NAME = "last_played_name";
 
-    public static void setLastPlayed(Context ctx, String url) {
-        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY_LAST_PLAYED, url).apply();
+    public static void setLastPlayed(Context ctx, String url, String name) {
+        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                .putString(KEY_LAST_PLAYED, url)
+                .putString(KEY_LAST_PLAYED_NAME, name)
+                .apply();
     }
 
     public static String getLastPlayed(Context ctx) {
         return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_LAST_PLAYED, null);
+    }
+
+    public static String getLastPlayedName(Context ctx) {
+        return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_LAST_PLAYED_NAME, null);
     }
 
     public static List<String> getUrls(Context ctx) {
