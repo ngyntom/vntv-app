@@ -32,10 +32,9 @@ public class MainActivity extends AppCompatActivity {
     private static final String CAT_HTV = "HTV";
     private static final String CAT_SCTV = "SCTV";
     private static final String CAT_THVL = "THVL";
-    private static final String CAT_LOCAL = "Địa phương";
-    private static final String CAT_FOREIGN = "Nước ngoài";
+    private static final String CAT_OTHER = "Khác";
     private static final List<String> CATEGORIES = Arrays.asList(
-            CAT_FAVORITES, CAT_VTV, CAT_HTV, CAT_SCTV, CAT_THVL, CAT_LOCAL, CAT_FOREIGN);
+            CAT_FAVORITES, CAT_VTV, CAT_HTV, CAT_SCTV, CAT_THVL, CAT_OTHER);
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -65,6 +64,9 @@ public class MainActivity extends AppCompatActivity {
         // VTV comes up first by default (after Favorites, which is usually empty on first run).
         categoryAdapter = new CategoryAdapter(CATEGORIES, 1, this::filterByCategory);
         categoryTabs.setAdapter(categoryAdapter);
+
+        findViewById(R.id.settings_button).setOnClickListener(
+                v -> startActivity(new Intent(this, SettingsActivity.class)));
 
         loadChannels();
     }
@@ -152,9 +154,9 @@ public class MainActivity extends AppCompatActivity {
         if (upper.contains("VTV")) return CAT_VTV;
         if (upper.contains("HTV")) return CAT_HTV;
         if (upper.contains("SCTV")) return CAT_SCTV;
-        if (upper.contains("THVL") || upper.contains("THTV")) return CAT_THVL;
-        if (PlaylistStore.DEFAULT_VN_URL.equals(c.sourceUrl)) return CAT_LOCAL;
-        return CAT_FOREIGN;
+        if (upper.contains("THVL") || upper.contains("THTV")
+                || upper.contains("VINH LONG") || upper.contains("TRA VINH")) return CAT_THVL;
+        return CAT_OTHER;
     }
 
     private void filterByCategory(String category) {
