@@ -109,13 +109,34 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void openChannel(Channel channel) {
-        int index = displayedChannels.indexOf(channel);
-        ChannelHolder.current = displayedChannels;
+        // The in-player overlay and Channel Up/Down should reach every channel, not just the
+        // group the grid happened to be filtered to - ordered with the channel's own group
+        // first, then the other groups, so Up/Down still feels locally sorted.
+        List<Channel> playbackOrder = buildPlaybackOrder(channel);
+        int index = playbackOrder.indexOf(channel);
+        ChannelHolder.current = playbackOrder;
         Intent intent = new Intent(this, PlayerActivity.class);
         intent.putExtra(PlayerActivity.EXTRA_URL, channel.streamUrl);
         intent.putExtra(PlayerActivity.EXTRA_NAME, channel.name);
         intent.putExtra(PlayerActivity.EXTRA_INDEX, index);
         startActivity(intent);
+    }
+
+    private List<Channel> buildPlaybackOrder(Channel playing) {
+        String ownCategory = classify(playing);
+        List<String> order = new ArrayList<>();
+        order.add(ownCategory);
+        for (String cat : CATEGORIES) {
+            if (CAT_FAVORITES.equals(cat) || CategoryAdapter.ACTION_SETTINGS.equals(cat)) continue;
+            if (!cat.equals(ownCategory)) order.add(cat);
+        }
+        List<Channel> result = new ArrayList<>();
+        for (String cat : order) {
+            for (Channel c : allChannels) {
+                if (cat.equals(classify(c))) result.add(c);
+            }
+        }
+        return result;
     }
 
     private void toggleFavorite(Channel channel) {
