@@ -20,8 +20,17 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.VH> {
     private int selectedPosition = 0;
 
     public CategoryAdapter(List<String> categories, OnCategoryClick listener) {
+        this(categories, 0, listener);
+    }
+
+    public CategoryAdapter(List<String> categories, int initialSelected, OnCategoryClick listener) {
         this.categories = categories;
         this.listener = listener;
+        this.selectedPosition = initialSelected;
+    }
+
+    public String getSelectedCategory() {
+        return categories.get(selectedPosition);
     }
 
     @NonNull

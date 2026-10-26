@@ -9,10 +9,10 @@
     <string name="add">Thêm</string>
     <string name="remove_hint">Giữ (long-press) một link để xoá</string>
     <string name="removed">Đã xoá</string>
-    <string name="default_channel_set">Đã đặt kênh mặc định: %1$s</string>
-    <string name="default_channel_hint">Giữ (long-press) một kênh ở màn hình chính để đặt làm kênh mặc định (tự phát khi mở app)</string>
-    <string name="default_channel_label">Kênh mặc định hiện tại:</string>
-    <string name="default_channel_none">Chưa đặt</string>
-    <string name="clear_default">Bỏ đặt mặc định</string>
-    <string name="default_cleared">Đã bỏ kênh mặc định</string>
+    <string name="added_favorite">Đã thêm vào yêu thích: %1$s</string>
+    <string name="removed_favorite">Đã bỏ khỏi yêu thích: %1$s</string>
+    <string name="default_channel_hint">Giữ (long-press) một kênh ở màn hình chính để thêm/bỏ khỏi Yêu thích. Kênh yêu thích đầu tiên sẽ tự phát khi mở app.</string>
+    <string name="favorites_count">Số kênh yêu thích: %1$d</string>
+    <string name="clear_favorites">Xoá tất cả yêu thích</string>
+    <string name="favorites_cleared">Đã xoá danh sách yêu thích</string>
 </resources>

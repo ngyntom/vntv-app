@@ -10,30 +10,40 @@ import java.util.List;
 public class PlaylistStore {
     private static final String PREFS = "vntv_prefs";
     private static final String KEY_URLS = "playlist_urls";
-    private static final String KEY_DEFAULT_NAME = "default_channel_name";
-    private static final String KEY_DEFAULT_URL = "default_channel_url";
+    private static final String KEY_FAVORITES = "favorite_urls";
     public static final String DEFAULT_VN_URL = "https://iptv-org.github.io/iptv/countries/vn.m3u";
 
-    public static void setDefaultChannel(Context ctx, Channel channel) {
+    public static List<String> getFavorites(Context ctx) {
+        String stored = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_FAVORITES, null);
+        List<String> list = new ArrayList<>();
+        if (stored != null && !stored.trim().isEmpty()) {
+            list.addAll(Arrays.asList(stored.split("\n")));
+        }
+        return list;
+    }
+
+    public static boolean isFavorite(Context ctx, String url) {
+        return getFavorites(ctx).contains(url);
+    }
+
+    public static boolean toggleFavorite(Context ctx, String url) {
+        List<String> favs = getFavorites(ctx);
+        boolean nowFavorite;
+        if (favs.contains(url)) {
+            favs.remove(url);
+            nowFavorite = false;
+        } else {
+            favs.add(url);
+            nowFavorite = true;
+        }
         ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-                .putString(KEY_DEFAULT_NAME, channel.name)
-                .putString(KEY_DEFAULT_URL, channel.streamUrl)
+                .putString(KEY_FAVORITES, String.join("\n", favs))
                 .apply();
+        return nowFavorite;
     }
 
-    public static void clearDefaultChannel(Context ctx) {
-        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-                .remove(KEY_DEFAULT_NAME)
-                .remove(KEY_DEFAULT_URL)
-                .apply();
-    }
-
-    public static String getDefaultChannelUrl(Context ctx) {
-        return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_DEFAULT_URL, null);
-    }
-
-    public static String getDefaultChannelName(Context ctx) {
-        return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_DEFAULT_NAME, null);
+    public static void clearFavorites(Context ctx) {
+        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove(KEY_FAVORITES).apply();
     }
 
     public static List<String> getUrls(Context ctx) {

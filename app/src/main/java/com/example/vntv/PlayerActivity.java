@@ -46,6 +46,10 @@ public class PlayerActivity extends AppCompatActivity {
         overlayAdapter = new ChannelAdapter(channels, this::switchTo);
         channelListOverlay.setAdapter(overlayAdapter);
 
+        // Live channel streams: no seek bar, no next/prev transport buttons. Our own
+        // overlay (OK button) and Channel Up/Down handle switching instead.
+        playerView.setUseController(false);
+
         player = new ExoPlayer.Builder(this).build();
         playerView.setPlayer(player);
         player.addListener(new Player.Listener() {

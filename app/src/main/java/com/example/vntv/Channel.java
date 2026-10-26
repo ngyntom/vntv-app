@@ -6,12 +6,14 @@ public class Channel {
     public final String logoUrl;
     public final String streamUrl;
     public final String groupTitle;
+    public final String sourceUrl;
 
-    public Channel(String name, String quality, String logoUrl, String streamUrl, String groupTitle) {
+    public Channel(String name, String quality, String logoUrl, String streamUrl, String groupTitle, String sourceUrl) {
         this.name = name;
         this.quality = quality;
         this.logoUrl = logoUrl;
         this.streamUrl = streamUrl;
         this.groupTitle = groupTitle;
+        this.sourceUrl = sourceUrl;
     }
 }

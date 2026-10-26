@@ -44,21 +44,20 @@ public class SettingsActivity extends AppCompatActivity {
             return true;
         });
 
-        TextView defaultChannelValue = findViewById(R.id.default_channel_value);
-        Button clearDefaultButton = findViewById(R.id.clear_default_button);
-        refreshDefaultChannel(defaultChannelValue);
-        clearDefaultButton.setOnClickListener(v -> {
-            PlaylistStore.clearDefaultChannel(this);
-            refreshDefaultChannel(defaultChannelValue);
-            Toast.makeText(this, R.string.default_cleared, Toast.LENGTH_SHORT).show();
+        TextView favoritesValue = findViewById(R.id.default_channel_value);
+        Button clearFavoritesButton = findViewById(R.id.clear_default_button);
+        clearFavoritesButton.setText(R.string.clear_favorites);
+        refreshFavorites(favoritesValue);
+        clearFavoritesButton.setOnClickListener(v -> {
+            PlaylistStore.clearFavorites(this);
+            refreshFavorites(favoritesValue);
+            Toast.makeText(this, R.string.favorites_cleared, Toast.LENGTH_SHORT).show();
         });
     }
 
-    private void refreshDefaultChannel(TextView view) {
-        String name = PlaylistStore.getDefaultChannelName(this);
-        String label = getString(R.string.default_channel_label);
-        String value = name != null ? name : getString(R.string.default_channel_none);
-        view.setText(label + " " + value);
+    private void refreshFavorites(TextView view) {
+        int count = PlaylistStore.getFavorites(this).size();
+        view.setText(getString(R.string.favorites_count, count));
     }
 
     private void refreshList() {

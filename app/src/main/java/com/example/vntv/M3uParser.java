@@ -18,7 +18,7 @@ public class M3uParser {
             "\\s*[\\(\\[]?\\s*(4K|FHD|UHD|HD|SD|\\d{3,4}p?)\\s*[\\)\\]]?\\s*$",
             Pattern.CASE_INSENSITIVE);
 
-    public static List<Channel> parse(InputStream in) throws IOException {
+    public static List<Channel> parse(InputStream in, String sourceUrl) throws IOException {
         List<Channel> result = new ArrayList<>();
         BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
         String line;
@@ -41,7 +41,7 @@ public class M3uParser {
                         quality = qualityM.group(1).toUpperCase();
                         pendingName = pendingName.substring(0, qualityM.start()).trim();
                     }
-                    result.add(new Channel(pendingName, quality, pendingLogo, line, pendingGroup));
+                    result.add(new Channel(pendingName, quality, pendingLogo, line, pendingGroup, sourceUrl));
                     pendingName = null;
                     pendingLogo = null;
                     pendingGroup = null;

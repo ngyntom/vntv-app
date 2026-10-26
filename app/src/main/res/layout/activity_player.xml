@@ -25,7 +25,7 @@
         android:id="@+id/channel_list_overlay"
         android:layout_width="320dp"
         android:layout_height="match_parent"
-        android:layout_gravity="end"
+        android:layout_gravity="start"
         android:background="#D0101010"
         android:padding="10dp"
         android:visibility="gone"

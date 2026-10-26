@@ -20,25 +20,32 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "VnTv";
-    private static final String ALL_CATEGORY = "Tất cả";
-    private static final String OTHER_CATEGORY = "Khác";
+    private static final String CAT_FAVORITES = "Yêu thích";
+    private static final String CAT_VTV = "VTV";
+    private static final String CAT_HTV = "HTV";
+    private static final String CAT_SCTV = "SCTV";
+    private static final String CAT_LOCAL = "Địa phương";
+    private static final String CAT_FOREIGN = "Nước ngoài";
+    private static final List<String> CATEGORIES = Arrays.asList(
+            CAT_FAVORITES, CAT_VTV, CAT_HTV, CAT_SCTV, CAT_LOCAL, CAT_FOREIGN);
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private ChannelAdapter adapter;
     private RecyclerView categoryTabs;
+    private CategoryAdapter categoryAdapter;
     private TextView emptyView;
     private ProgressBar progressBar;
     private List<Channel> allChannels = new ArrayList<>();
     private List<Channel> displayedChannels = new ArrayList<>();
-    private boolean autoLaunchedDefault = false;
+    private boolean autoLaunched = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,8 +58,13 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new GridLayoutManager(this, 4));
         categoryTabs.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         adapter = new ChannelAdapter(new ArrayList<>(), this::openChannel);
-        adapter.setOnChannelLongClickListener(this::setAsDefaultChannel);
+        adapter.setOnChannelLongClickListener(this::toggleFavorite);
         recyclerView.setAdapter(adapter);
+
+        // VTV comes up first by default (after Favorites, which is usually empty on first run).
+        categoryAdapter = new CategoryAdapter(CATEGORIES, 1, this::filterByCategory);
+        categoryTabs.setAdapter(categoryAdapter);
+
         loadChannels();
     }
 
@@ -72,9 +84,18 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    private void setAsDefaultChannel(Channel channel) {
-        PlaylistStore.setDefaultChannel(this, channel);
-        Toast.makeText(this, getString(R.string.default_channel_set, channel.name), Toast.LENGTH_SHORT).show();
+    private void toggleFavorite(Channel channel) {
+        boolean nowFavorite = PlaylistStore.toggleFavorite(this, channel.streamUrl);
+        Toast.makeText(this, nowFavorite
+                ? getString(R.string.added_favorite, channel.name)
+                : getString(R.string.removed_favorite, channel.name), Toast.LENGTH_SHORT).show();
+        if (CAT_FAVORITES.equals(currentCategory())) {
+            filterByCategory(CAT_FAVORITES);
+        }
+    }
+
+    private String currentCategory() {
+        return categoryAdapter != null ? categoryAdapter.getSelectedCategory() : CAT_VTV;
     }
 
     private void loadChannels() {
@@ -92,57 +113,62 @@ public class MainActivity extends AppCompatActivity {
             mainHandler.post(() -> {
                 progressBar.setVisibility(View.GONE);
                 allChannels = all;
-                displayedChannels = all;
-                setupCategoryTabs(all);
-                adapter.setChannels(all);
                 emptyView.setVisibility(all.isEmpty() ? View.VISIBLE : View.GONE);
                 if (all.isEmpty()) {
                     Toast.makeText(this, R.string.load_failed, Toast.LENGTH_LONG).show();
                 }
-                maybeAutoLaunchDefault(all);
+                if (!maybeAutoLaunchFirstFavorite(all)) {
+                    filterByCategory(currentCategory());
+                }
             });
         });
     }
 
-    private void maybeAutoLaunchDefault(List<Channel> all) {
-        if (autoLaunchedDefault) return;
-        String defaultUrl = PlaylistStore.getDefaultChannelUrl(this);
-        if (defaultUrl == null) return;
+    private boolean maybeAutoLaunchFirstFavorite(List<Channel> all) {
+        if (autoLaunched) return false;
+        List<String> favorites = PlaylistStore.getFavorites(this);
+        if (favorites.isEmpty()) return false;
+        String firstUrl = favorites.get(0);
         for (Channel c : all) {
-            if (defaultUrl.equals(c.streamUrl)) {
-                autoLaunchedDefault = true;
+            if (firstUrl.equals(c.streamUrl)) {
+                autoLaunched = true;
+                displayedChannels = all;
                 openChannel(c);
-                break;
+                return true;
             }
         }
+        return false;
     }
 
-    private void setupCategoryTabs(List<Channel> channels) {
-        LinkedHashSet<String> categories = new LinkedHashSet<>();
-        categories.add(ALL_CATEGORY);
-        for (Channel c : channels) {
-            String group = c.groupTitle;
-            categories.add(group == null || group.trim().isEmpty() ? OTHER_CATEGORY : group.trim());
-        }
-        List<String> categoryList = new ArrayList<>(categories);
-        CategoryAdapter categoryAdapter = new CategoryAdapter(categoryList, this::filterByCategory);
-        categoryTabs.setAdapter(categoryAdapter);
+    private String classify(Channel c) {
+        String upper = c.name.toUpperCase();
+        if (upper.contains("VTV")) return CAT_VTV;
+        if (upper.contains("HTV")) return CAT_HTV;
+        if (upper.contains("SCTV")) return CAT_SCTV;
+        if (PlaylistStore.DEFAULT_VN_URL.equals(c.sourceUrl)) return CAT_LOCAL;
+        return CAT_FOREIGN;
     }
 
     private void filterByCategory(String category) {
-        if (ALL_CATEGORY.equals(category)) {
-            displayedChannels = allChannels;
-            adapter.setChannels(displayedChannels);
-            return;
-        }
         List<Channel> filtered = new ArrayList<>();
-        for (Channel c : allChannels) {
-            String group = c.groupTitle;
-            String bucket = group == null || group.trim().isEmpty() ? OTHER_CATEGORY : group.trim();
-            if (bucket.equals(category)) filtered.add(c);
+        if (CAT_FAVORITES.equals(category)) {
+            List<String> favUrls = PlaylistStore.getFavorites(this);
+            for (String url : favUrls) {
+                for (Channel c : allChannels) {
+                    if (url.equals(c.streamUrl)) {
+                        filtered.add(c);
+                        break;
+                    }
+                }
+            }
+        } else {
+            for (Channel c : allChannels) {
+                if (category.equals(classify(c))) filtered.add(c);
+            }
         }
         displayedChannels = filtered;
         adapter.setChannels(displayedChannels);
+        emptyView.setVisibility(filtered.isEmpty() && !allChannels.isEmpty() ? View.VISIBLE : View.GONE);
     }
 
     private List<Channel> fetchPlaylist(String urlStr) throws Exception {
@@ -152,7 +178,7 @@ public class MainActivity extends AppCompatActivity {
         conn.setReadTimeout(10000);
         conn.setInstanceFollowRedirects(true);
         try (InputStream in = conn.getInputStream()) {
-            return M3uParser.parse(in);
+            return M3uParser.parse(in, urlStr);
         } finally {
             conn.disconnect();
         }
