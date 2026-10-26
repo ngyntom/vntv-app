@@ -49,7 +49,17 @@ public class PlayerActivity extends AppCompatActivity {
         // Live channel streams: no seek bar, no next/prev transport buttons. Our own
         // overlay (OK button) and Channel Up/Down handle switching instead.
         playerView.setUseController(false);
+    }
 
+    // ExoPlayer's own guidance for API 24+: create/bind the player in onStart and tear it down
+    // in onStop, rather than tying it to onCreate/onDestroy. Keeping them asymmetric left a
+    // stale, released player around if the activity was ever stopped and restarted without
+    // being destroyed (e.g. a transient system-driven pause right after the TV resumed it) -
+    // any key press after that called methods on a dead player instead of a fresh one.
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (player != null) return;
         player = new ExoPlayer.Builder(this).build();
         playerView.setPlayer(player);
         player.addListener(new Player.Listener() {
@@ -75,6 +85,7 @@ public class PlayerActivity extends AppCompatActivity {
     }
 
     private void play(Channel channel) {
+        if (player == null) return;
         nowPlayingName.setText(channel.name);
         player.setMediaItem(MediaItem.fromUri(channel.streamUrl));
         player.prepare();

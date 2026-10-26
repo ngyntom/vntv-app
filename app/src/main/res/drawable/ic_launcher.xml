@@ -18,17 +18,17 @@
     </path>
 
     <path
-        android:pathData="M24,32 h60 a6,6 0 0 1 6,6 v34 a6,6 0 0 1 -6,6 h-60 a6,6 0 0 1 -6,-6 v-34 a6,6 0 0 1 6,-6 z"
+        android:pathData="M8,34 h38 a5,5 0 0 1 5,5 v30 a5,5 0 0 1 -5,5 h-38 a5,5 0 0 1 -5,-5 v-30 a5,5 0 0 1 5,-5 z"
         android:fillColor="#00000000"
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="4" />
+        android:strokeWidth="3.4" />
 
     <path
-        android:pathData="M46,44 l20,11 l-20,11 z"
+        android:pathData="M20,46 l14,8 l-14,8 z"
         android:fillColor="#FFFFFF" />
 
-    <path android:pathData="M62,8 L66,18 L70,8" android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M72,18 L72,8 L80,18 L80,8" android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M82,8 L90,8 M86,8 L86,18" android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M92,8 L96,18 L100,8" android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M56,42 L60.5,66 L65,42" android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="3" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M69,66 L69,42 L78,66 L78,42" android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="3" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M82,42 L91,42 M86.5,42 L86.5,66" android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="3" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M95,42 L99.5,66 L104,42" android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="3" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

@@ -32,9 +32,10 @@ public class MainActivity extends AppCompatActivity {
     private static final String CAT_HTV = "HTV";
     private static final String CAT_SCTV = "SCTV";
     private static final String CAT_THVL = "THVL";
-    private static final String CAT_OTHER = "Khác";
+    private static final String CAT_OTHER = "Tổng hợp";
     private static final List<String> CATEGORIES = Arrays.asList(
-            CAT_FAVORITES, CAT_VTV, CAT_HTV, CAT_SCTV, CAT_THVL, CAT_OTHER);
+            CAT_FAVORITES, CAT_VTV, CAT_HTV, CAT_SCTV, CAT_THVL, CAT_OTHER,
+            CategoryAdapter.ACTION_SETTINGS);
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -62,11 +63,8 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setAdapter(adapter);
 
         // VTV comes up first by default (after Favorites, which is usually empty on first run).
-        categoryAdapter = new CategoryAdapter(CATEGORIES, 1, this::filterByCategory);
+        categoryAdapter = new CategoryAdapter(CATEGORIES, 1, this::onCategorySelected);
         categoryTabs.setAdapter(categoryAdapter);
-
-        findViewById(R.id.settings_button).setOnClickListener(
-                v -> startActivity(new Intent(this, SettingsActivity.class)));
 
         loadChannels();
     }
@@ -74,7 +72,40 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (allChannels.isEmpty()) loadChannels();
+        if (allChannels.isEmpty()) {
+            loadChannels();
+        } else {
+            syncSidebarToLastPlayed();
+        }
+    }
+
+    private void onCategorySelected(String category) {
+        if (CategoryAdapter.ACTION_SETTINGS.equals(category)) {
+            startActivity(new Intent(this, SettingsActivity.class));
+            return;
+        }
+        filterByCategory(category);
+    }
+
+    /** Back from the player (or just resuming): point the sidebar at whatever was last playing,
+     *  so Up/Down works immediately instead of landing on an unrelated, unfocused category. */
+    private void syncSidebarToLastPlayed() {
+        String lastUrl = PlaylistStore.getLastPlayed(this);
+        if (lastUrl == null) return;
+        for (Channel c : allChannels) {
+            if (!lastUrl.equals(c.streamUrl)) continue;
+            String category = classify(c);
+            int index = categoryAdapter.indexOf(category);
+            if (index < 0) return;
+            categoryAdapter.setSelectedPosition(index);
+            filterByCategory(category);
+            categoryTabs.scrollToPosition(index);
+            categoryTabs.post(() -> {
+                RecyclerView.ViewHolder vh = categoryTabs.findViewHolderForAdapterPosition(index);
+                if (vh != null) vh.itemView.requestFocus();
+            });
+            return;
+        }
     }
 
     private void openChannel(Channel channel) {
@@ -178,7 +209,11 @@ public class MainActivity extends AppCompatActivity {
         }
         displayedChannels = filtered;
         adapter.setChannels(displayedChannels);
-        emptyView.setVisibility(filtered.isEmpty() && !allChannels.isEmpty() ? View.VISIBLE : View.GONE);
+        boolean showEmpty = filtered.isEmpty() && !allChannels.isEmpty();
+        if (showEmpty) {
+            emptyView.setText(CAT_FAVORITES.equals(category) ? R.string.no_favorites : R.string.no_channels);
+        }
+        emptyView.setVisibility(showEmpty ? View.VISIBLE : View.GONE);
     }
 
     private List<Channel> fetchPlaylist(String urlStr) throws Exception {

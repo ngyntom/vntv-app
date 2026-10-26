@@ -18,6 +18,10 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.VH> {
         void onClick(String category);
     }
 
+    /** A plain nav action (e.g. "Settings"): only reacts to a real OK/click, never to focus
+     *  passing over it, and never shows as the persistently "selected" filter. */
+    public static final String ACTION_SETTINGS = "Cài đặt";
+
     private static final Map<String, Integer> ICONS = new HashMap<>();
     static {
         ICONS.put("Yêu thích", R.drawable.ic_cat_favorite);
@@ -25,7 +29,8 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.VH> {
         ICONS.put("HTV", R.drawable.ic_cat_tv);
         ICONS.put("SCTV", R.drawable.ic_cat_tv);
         ICONS.put("THVL", R.drawable.ic_cat_tv);
-        ICONS.put("Khác", R.drawable.ic_cat_local);
+        ICONS.put("Tổng hợp", R.drawable.ic_cat_local);
+        ICONS.put(ACTION_SETTINGS, R.drawable.ic_settings);
     }
 
     private final List<String> categories;
@@ -46,6 +51,20 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.VH> {
         return categories.get(selectedPosition);
     }
 
+    /** Updates which row is highlighted as "selected" without firing the click listener
+     *  (the caller already knows what to show, e.g. syncing to the channel that was playing). */
+    public void setSelectedPosition(int position) {
+        if (position < 0 || position >= categories.size() || position == selectedPosition) return;
+        int previous = selectedPosition;
+        selectedPosition = position;
+        notifyItemChanged(previous);
+        notifyItemChanged(selectedPosition);
+    }
+
+    public int indexOf(String category) {
+        return categories.indexOf(category);
+    }
+
     @NonNull
     @Override
     public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -56,10 +75,18 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.VH> {
     @Override
     public void onBindViewHolder(@NonNull VH holder, int position) {
         String name = categories.get(position);
+        boolean isAction = ACTION_SETTINGS.equals(name);
         holder.name.setText(name);
-        holder.row.setSelected(position == selectedPosition);
+        holder.row.setSelected(!isAction && position == selectedPosition);
         Integer iconRes = ICONS.get(name);
         if (iconRes != null) holder.icon.setImageResource(iconRes);
+
+        if (isAction) {
+            // A plain action: fires only on a real OK/click, never previews on focus pass-through.
+            holder.row.setOnClickListener(v -> listener.onClick(name));
+            holder.row.setOnFocusChangeListener(null);
+            return;
+        }
 
         // Moving D-pad focus onto a category previews it immediately, like a TV side nav;
         // OK/click still works too (touch, or a simulator with no focus events).

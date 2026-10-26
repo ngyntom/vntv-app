@@ -95,6 +95,7 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.VH> {
             holder.logo.setVisibility(View.VISIBLE);
             Glide.with(holder.logo.getContext())
                     .load(c.logoUrl)
+                    .transform(new TrimTransparentTransformation())
                     .into(holder.logo);
         } else {
             holder.logo.setVisibility(View.GONE);
