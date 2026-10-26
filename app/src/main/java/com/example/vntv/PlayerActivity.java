@@ -1,5 +1,6 @@
 package com.example.vntv;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
@@ -137,9 +138,16 @@ public class PlayerActivity extends AppCompatActivity {
     public void onBackPressed() {
         if (overlayVisible) {
             setOverlayVisible(false);
-        } else {
-            super.onBackPressed();
+            return;
         }
+        if (isTaskRoot()) {
+            // Nothing beneath us in the stack (e.g. the TV's own launcher jumped straight into
+            // playback) - go to the channel picker instead of falling through to Home.
+            Intent intent = new Intent(this, MainActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
+        }
+        super.onBackPressed();
     }
 
     @Override

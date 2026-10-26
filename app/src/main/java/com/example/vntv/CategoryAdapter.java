@@ -51,14 +51,16 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.VH> {
         return categories.get(selectedPosition);
     }
 
+    private static final String SELECTION_PAYLOAD = "selection";
+
     /** Updates which row is highlighted as "selected" without firing the click listener
      *  (the caller already knows what to show, e.g. syncing to the channel that was playing). */
     public void setSelectedPosition(int position) {
         if (position < 0 || position >= categories.size() || position == selectedPosition) return;
         int previous = selectedPosition;
         selectedPosition = position;
-        notifyItemChanged(previous);
-        notifyItemChanged(selectedPosition);
+        notifyItemChanged(previous, SELECTION_PAYLOAD);
+        notifyItemChanged(selectedPosition, SELECTION_PAYLOAD);
     }
 
     public int indexOf(String category) {
@@ -70,6 +72,18 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.VH> {
     public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_category, parent, false);
         return new VH(v);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull VH holder, int position, @NonNull List<Object> payloads) {
+        if (!payloads.isEmpty()) {
+            // Selection-only update: just flip the highlight, keep the click/focus
+            // listeners already attached so a rebind can't disturb live D-pad focus.
+            String name = categories.get(position);
+            holder.row.setSelected(!ACTION_SETTINGS.equals(name) && position == selectedPosition);
+            return;
+        }
+        onBindViewHolder(holder, position);
     }
 
     @Override
@@ -93,8 +107,8 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.VH> {
         View.OnClickListener select = v -> {
             int previous = selectedPosition;
             selectedPosition = position;
-            notifyItemChanged(previous);
-            notifyItemChanged(selectedPosition);
+            notifyItemChanged(previous, SELECTION_PAYLOAD);
+            notifyItemChanged(selectedPosition, SELECTION_PAYLOAD);
             listener.onClick(name);
         };
         holder.row.setOnClickListener(select);
