@@ -11,7 +11,8 @@
     <string name="removed">Đã xoá</string>
     <string name="added_favorite">Đã thêm vào yêu thích: %1$s</string>
     <string name="removed_favorite">Đã bỏ khỏi yêu thích: %1$s</string>
-    <string name="default_channel_hint">Giữ (long-press) một kênh ở màn hình chính để thêm/bỏ khỏi Yêu thích. Kênh yêu thích đầu tiên sẽ tự phát khi mở app.</string>
+    <string name="default_channel_hint">Giữ (long-press) một kênh ở màn hình chính để thêm/bỏ khỏi Yêu thích. Mở app sẽ tự phát lại kênh đang xem gần nhất (nếu chưa xem lần nào thì phát kênh yêu thích đầu tiên).</string>
+    <string name="sidebar_header">DANH MỤC</string>
     <string name="favorites_count">Số kênh yêu thích: %1$d</string>
     <string name="clear_favorites">Xoá tất cả yêu thích</string>
     <string name="favorites_cleared">Đã xoá danh sách yêu thích</string>

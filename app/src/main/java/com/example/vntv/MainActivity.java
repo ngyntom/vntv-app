@@ -31,10 +31,11 @@ public class MainActivity extends AppCompatActivity {
     private static final String CAT_VTV = "VTV";
     private static final String CAT_HTV = "HTV";
     private static final String CAT_SCTV = "SCTV";
+    private static final String CAT_THVL = "THVL";
     private static final String CAT_LOCAL = "Địa phương";
     private static final String CAT_FOREIGN = "Nước ngoài";
     private static final List<String> CATEGORIES = Arrays.asList(
-            CAT_FAVORITES, CAT_VTV, CAT_HTV, CAT_SCTV, CAT_LOCAL, CAT_FOREIGN);
+            CAT_FAVORITES, CAT_VTV, CAT_HTV, CAT_SCTV, CAT_THVL, CAT_LOCAL, CAT_FOREIGN);
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -117,20 +118,26 @@ public class MainActivity extends AppCompatActivity {
                 if (all.isEmpty()) {
                     Toast.makeText(this, R.string.load_failed, Toast.LENGTH_LONG).show();
                 }
-                if (!maybeAutoLaunchFirstFavorite(all)) {
+                if (!maybeAutoResume(all)) {
                     filterByCategory(currentCategory());
                 }
             });
         });
     }
 
-    private boolean maybeAutoLaunchFirstFavorite(List<Channel> all) {
+    /** Resumes the channel that was last playing; falls back to the first favorite. */
+    private boolean maybeAutoResume(List<Channel> all) {
         if (autoLaunched) return false;
+        String lastUrl = PlaylistStore.getLastPlayed(this);
+        if (lastUrl != null && launchIfPresent(all, lastUrl)) return true;
         List<String> favorites = PlaylistStore.getFavorites(this);
-        if (favorites.isEmpty()) return false;
-        String firstUrl = favorites.get(0);
+        if (!favorites.isEmpty() && launchIfPresent(all, favorites.get(0))) return true;
+        return false;
+    }
+
+    private boolean launchIfPresent(List<Channel> all, String streamUrl) {
         for (Channel c : all) {
-            if (firstUrl.equals(c.streamUrl)) {
+            if (streamUrl.equals(c.streamUrl)) {
                 autoLaunched = true;
                 displayedChannels = all;
                 openChannel(c);
@@ -145,6 +152,7 @@ public class MainActivity extends AppCompatActivity {
         if (upper.contains("VTV")) return CAT_VTV;
         if (upper.contains("HTV")) return CAT_HTV;
         if (upper.contains("SCTV")) return CAT_SCTV;
+        if (upper.contains("THVL") || upper.contains("THTV")) return CAT_THVL;
         if (PlaylistStore.DEFAULT_VN_URL.equals(c.sourceUrl)) return CAT_LOCAL;
         return CAT_FOREIGN;
     }

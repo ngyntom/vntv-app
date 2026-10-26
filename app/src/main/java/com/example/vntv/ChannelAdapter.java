@@ -1,8 +1,12 @@
 package com.example.vntv;
 
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -26,6 +30,7 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.VH> {
     private List<Channel> channels;
     private final OnChannelClick listener;
     private OnChannelLongClick longClickListener;
+    private final Handler longPressHandler = new Handler(Looper.getMainLooper());
 
     public ChannelAdapter(List<Channel> channels, OnChannelClick listener) {
         this.channels = channels;
@@ -57,9 +62,31 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.VH> {
         Channel c = channels.get(position);
         holder.name.setText(c.name);
         holder.itemView.setOnClickListener(v -> listener.onClick(c));
-        holder.itemView.setOnLongClickListener(v -> {
-            if (longClickListener != null) {
-                longClickListener.onLongClick(c);
+        // A TV remote's OK button never triggers the framework's touch-based long-click
+        // detection, so time the key press by hand: schedule a "long press" after the system
+        // threshold on key-down, cancel it (and fall back to a normal click) on key-up.
+        holder.longPressTriggered = false;
+        holder.longPressRunnable = () -> {
+            holder.longPressTriggered = true;
+            if (longClickListener != null) longClickListener.onLongClick(c);
+        };
+        holder.itemView.setOnKeyListener((v, keyCode, event) -> {
+            if (keyCode != KeyEvent.KEYCODE_DPAD_CENTER && keyCode != KeyEvent.KEYCODE_ENTER) {
+                return false;
+            }
+            if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                if (event.getRepeatCount() == 0) {
+                    holder.longPressTriggered = false;
+                    longPressHandler.removeCallbacks(holder.longPressRunnable);
+                    longPressHandler.postDelayed(holder.longPressRunnable, ViewConfiguration.getLongPressTimeout());
+                }
+                return true;
+            }
+            if (event.getAction() == KeyEvent.ACTION_UP) {
+                longPressHandler.removeCallbacks(holder.longPressRunnable);
+                if (!holder.longPressTriggered) {
+                    listener.onClick(c);
+                }
                 return true;
             }
             return false;
@@ -90,6 +117,8 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.VH> {
         TextView name;
         TextView quality;
         ImageView logo;
+        boolean longPressTriggered;
+        Runnable longPressRunnable;
         VH(View itemView) {
             super(itemView);
             name = itemView.findViewById(R.id.channel_name);

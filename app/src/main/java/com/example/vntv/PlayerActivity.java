@@ -69,6 +69,7 @@ public class PlayerActivity extends AppCompatActivity {
                 player.setMediaItem(MediaItem.fromUri(url));
                 player.prepare();
                 player.play();
+                PlaylistStore.setLastPlayed(this, url);
             }
         }
     }
@@ -78,6 +79,7 @@ public class PlayerActivity extends AppCompatActivity {
         player.setMediaItem(MediaItem.fromUri(channel.streamUrl));
         player.prepare();
         player.play();
+        PlaylistStore.setLastPlayed(this, channel.streamUrl);
     }
 
     private void switchTo(Channel channel) {

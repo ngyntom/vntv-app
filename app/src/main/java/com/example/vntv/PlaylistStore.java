@@ -46,6 +46,16 @@ public class PlaylistStore {
         ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove(KEY_FAVORITES).apply();
     }
 
+    private static final String KEY_LAST_PLAYED = "last_played_url";
+
+    public static void setLastPlayed(Context ctx, String url) {
+        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY_LAST_PLAYED, url).apply();
+    }
+
+    public static String getLastPlayed(Context ctx) {
+        return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_LAST_PLAYED, null);
+    }
+
     public static List<String> getUrls(Context ctx) {
         SharedPreferences prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         String stored = prefs.getString(KEY_URLS, null);
