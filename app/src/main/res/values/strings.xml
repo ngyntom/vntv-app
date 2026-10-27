@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">VN TV</string>
+    <string name="app_name">VnTV</string>
     <string name="no_channels">Không tải được kênh nào. Vào Settings để kiểm tra nguồn.</string>
     <string name="no_favorites">Chưa có kênh yêu thích nào.\nGiữ (long-press) một kênh để thêm vào đây.</string>
     <string name="load_failed">Không tải được danh sách kênh</string>
