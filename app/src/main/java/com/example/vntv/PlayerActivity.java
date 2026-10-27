@@ -57,6 +57,7 @@ public class PlayerActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
+        PlaylistStore.setOnMenu(this, false);
         if (player != null) return;
         player = new ExoPlayer.Builder(this).build();
         playerView.setPlayer(player);
@@ -169,6 +170,11 @@ public class PlayerActivity extends AppCompatActivity {
             setOverlayVisible(false);
             return;
         }
+        // Mark this *before* navigating: if MainActivity ends up having to be recreated from
+        // scratch (see the comment below), its onCreate() checks this to decide whether to
+        // auto-resume - without it, a fresh MainActivity would see the still-set "last played"
+        // URL and immediately relaunch the player, turning this Back press into a no-op loop.
+        PlaylistStore.setOnMenu(this, true);
         // Explicitly navigate to MainActivity instead of trusting finish() to reveal whatever
         // the OS thinks is beneath us: on this TV, finishing here sometimes dropped straight to
         // the launcher's Home even with MainActivity still alive in the same task underneath

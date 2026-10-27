@@ -64,6 +64,20 @@ public class PlaylistStore {
         return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_LAST_PLAYED_NAME, null);
     }
 
+    private static final String KEY_ON_MENU = "on_menu";
+
+    /** Where the user actually left off: true once the channel grid is genuinely on screen
+     *  (including the moment Back is pressed from the player, before the screen even changes),
+     *  false once a channel starts playing. A fresh launch only auto-resumes when this is false -
+     *  if the user had backed out to the grid, that's where the app should reopen too. */
+    public static void setOnMenu(Context ctx, boolean onMenu) {
+        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_ON_MENU, onMenu).apply();
+    }
+
+    public static boolean wasOnMenu(Context ctx) {
+        return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_ON_MENU, false);
+    }
+
     public static List<String> getUrls(Context ctx) {
         SharedPreferences prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         String stored = prefs.getString(KEY_URLS, null);

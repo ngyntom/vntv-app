@@ -82,6 +82,9 @@ public class MainActivity extends AppCompatActivity {
      *  those; loadChannels() still runs right after to fill in the real list for Up/Down and
      *  the in-player overlay, picked up live by ChannelHolder once it's ready. */
     private void instantResumeIfPossible() {
+        // If the user had already backed out to this grid before leaving the app, that's
+        // where they should land again - not back in the channel they'd stepped away from.
+        if (PlaylistStore.wasOnMenu(this)) return;
         String lastUrl = PlaylistStore.getLastPlayed(this);
         if (lastUrl == null) return;
         autoLaunched = true;
@@ -112,6 +115,7 @@ public class MainActivity extends AppCompatActivity {
     /** Back from the player (or just resuming): point the sidebar at whatever was last playing,
      *  so Up/Down works immediately instead of landing on an unrelated, unfocused category. */
     private void syncSidebarToLastPlayed() {
+        PlaylistStore.setOnMenu(this, true);
         String lastUrl = PlaylistStore.getLastPlayed(this);
         if (lastUrl == null) return;
         for (Channel c : allChannels) {
@@ -195,6 +199,7 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(this, R.string.load_failed, Toast.LENGTH_LONG).show();
                 }
                 if (!finishInstantResume(all) && !maybeAutoResume(all)) {
+                    PlaylistStore.setOnMenu(this, true);
                     filterByCategory(currentCategory());
                 }
             });
