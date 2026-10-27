@@ -33,9 +33,20 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.VH> {
         ICONS.put(ACTION_SETTINGS, R.drawable.ic_settings);
     }
 
+    public interface FocusSelectGate {
+        boolean allow();
+    }
+
     private final List<String> categories;
     private final OnCategoryClick listener;
     private int selectedPosition = 0;
+    private FocusSelectGate focusSelectGate;
+
+    /** Focus-triggered previews only fire when this allows it, so focus the system assigns on
+     *  its own (first layout, or a focused tile being rebound) can't silently switch category. */
+    public void setFocusSelectGate(FocusSelectGate gate) {
+        this.focusSelectGate = gate;
+    }
 
     public CategoryAdapter(List<String> categories, OnCategoryClick listener) {
         this(categories, 0, listener);
@@ -113,7 +124,8 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.VH> {
         };
         holder.row.setOnClickListener(select);
         holder.row.setOnFocusChangeListener((v, hasFocus) -> {
-            if (hasFocus && position != selectedPosition) {
+            if (hasFocus && position != selectedPosition
+                    && (focusSelectGate == null || focusSelectGate.allow())) {
                 select.onClick(v);
             }
         });

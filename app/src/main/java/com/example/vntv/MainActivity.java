@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -49,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
     private List<Channel> displayedChannels = new ArrayList<>();
     private boolean autoLaunched = false;
     private boolean loading = false;
+    private long lastNavKeyAt = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,6 +68,9 @@ public class MainActivity extends AppCompatActivity {
 
         // Default landing tab: first content category after Favorites (usually empty on first run).
         categoryAdapter = new CategoryAdapter(CATEGORIES, 1, this::onCategorySelected);
+        // Focus navigation runs right after the key is dispatched, so a short window is enough
+        // to tell a user's D-pad move apart from focus the system hands out on its own.
+        categoryAdapter.setFocusSelectGate(() -> SystemClock.uptimeMillis() - lastNavKeyAt < 500);
         categoryTabs.setAdapter(categoryAdapter);
 
         // Only on a genuine fresh launch - not when Android is recreating this Activity to
@@ -380,6 +385,21 @@ public class MainActivity extends AppCompatActivity {
         } finally {
             conn.disconnect();
         }
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        if (event.getAction() == KeyEvent.ACTION_DOWN) {
+            switch (event.getKeyCode()) {
+                case KeyEvent.KEYCODE_DPAD_UP:
+                case KeyEvent.KEYCODE_DPAD_DOWN:
+                case KeyEvent.KEYCODE_DPAD_LEFT:
+                case KeyEvent.KEYCODE_DPAD_RIGHT:
+                    lastNavKeyAt = SystemClock.uptimeMillis();
+                    break;
+            }
+        }
+        return super.dispatchKeyEvent(event);
     }
 
     @Override

@@ -42,6 +42,9 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.VH> {
     }
 
     public void setChannels(List<Channel> channels) {
+        // Rebinding an identical list still detaches the focused tile, and Android then drops
+        // focus onto the first focusable view on screen (the sidebar's top row).
+        if (channels.equals(this.channels)) return;
         this.channels = channels;
         notifyDataSetChanged();
     }
