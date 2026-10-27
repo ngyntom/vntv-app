@@ -235,25 +235,40 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /** Finds category's channel in allChannels and moves the sidebar selection + D-pad focus
-     *  there. Returns false (leaving the sidebar untouched) if the URL isn't in the list. */
+    /** Finds the channel at url, filters the grid to its category, and puts D-pad focus
+     *  directly on that channel's tile - so returning from playback (or reopening the app)
+     *  lands right back where the user was, not just on the right sidebar category. Returns
+     *  false (leaving the sidebar untouched) if the URL isn't in the list. */
     private boolean selectCategoryForUrl(String url) {
         if (url == null) return false;
         for (Channel c : allChannels) {
             if (url.equals(c.streamUrl)) {
-                return selectCategoryInSidebar(classify(c));
+                String category = classify(c);
+                int catIndex = categoryAdapter.indexOf(category);
+                if (catIndex < 0) return false;
+                categoryAdapter.setSelectedPosition(catIndex);
+                filterByCategory(category, () -> focusChannelInGrid(url));
+                return true;
             }
         }
         return false;
     }
 
-    private boolean selectCategoryInSidebar(String category) {
-        int index = categoryAdapter.indexOf(category);
-        if (index < 0) return false;
-        categoryAdapter.setSelectedPosition(index);
-        filterByCategory(category);
-        focusCategoryRow(index);
-        return true;
+    private void focusChannelInGrid(String url) {
+        int index = -1;
+        for (int i = 0; i < displayedChannels.size(); i++) {
+            if (url.equals(displayedChannels.get(i).streamUrl)) {
+                index = i;
+                break;
+            }
+        }
+        if (index < 0) return;
+        final int pos = index;
+        channelGrid.scrollToPosition(pos);
+        channelGrid.post(() -> {
+            RecyclerView.ViewHolder vh = channelGrid.findViewHolderForAdapterPosition(pos);
+            if (vh != null) vh.itemView.requestFocus();
+        });
     }
 
     private void focusCurrentCategory() {
@@ -315,6 +330,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void filterByCategory(String category) {
+        filterByCategory(category, null);
+    }
+
+    private void filterByCategory(String category, Runnable afterApplied) {
         List<Channel> filtered = new ArrayList<>();
         if (CAT_FAVORITES.equals(category)) {
             List<String> favUrls = PlaylistStore.getFavorites(this);
@@ -339,7 +358,10 @@ public class MainActivity extends AppCompatActivity {
         // "Cannot call this method while RecyclerView is computing a layout or scrolling", which
         // crashed the whole app (and from the outside looked like Back dropping to Home - the
         // crash killed MainActivity before it could ever show). Posting it clears that window.
-        mainHandler.post(() -> adapter.setChannels(displayedChannels));
+        mainHandler.post(() -> {
+            adapter.setChannels(displayedChannels);
+            if (afterApplied != null) afterApplied.run();
+        });
         boolean showEmpty = filtered.isEmpty() && !allChannels.isEmpty();
         if (showEmpty) {
             emptyView.setText(CAT_FAVORITES.equals(category) ? R.string.no_favorites : R.string.no_channels);
