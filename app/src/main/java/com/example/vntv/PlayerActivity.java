@@ -24,6 +24,7 @@ public class PlayerActivity extends AppCompatActivity {
 
     private ExoPlayer player;
     private PlayerView playerView;
+    private View overlayPanel;
     private RecyclerView channelListOverlay;
     private ChannelAdapter overlayAdapter;
     private List<Channel> channels;
@@ -35,6 +36,7 @@ public class PlayerActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_player);
         playerView = findViewById(R.id.player_view);
+        overlayPanel = findViewById(R.id.overlay_panel);
         channelListOverlay = findViewById(R.id.channel_list_overlay);
 
         channels = ChannelHolder.current;
@@ -120,7 +122,7 @@ public class PlayerActivity extends AppCompatActivity {
 
     private void setOverlayVisible(boolean visible) {
         overlayVisible = visible;
-        channelListOverlay.setVisibility(visible ? View.VISIBLE : View.GONE);
+        overlayPanel.setVisibility(visible ? View.VISIBLE : View.GONE);
         if (!visible) return;
         if (currentIndex >= 0 && currentIndex < channels.size()) {
             channelListOverlay.scrollToPosition(currentIndex);

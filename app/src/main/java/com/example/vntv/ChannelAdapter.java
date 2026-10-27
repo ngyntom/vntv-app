@@ -62,6 +62,11 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.VH> {
         Channel c = channels.get(position);
         holder.name.setText(c.name);
         holder.itemView.setOnClickListener(v -> listener.onClick(c));
+        holder.itemView.setOnFocusChangeListener((v, hasFocus) -> {
+            float scale = hasFocus ? 1.06f : 1f;
+            v.animate().scaleX(scale).scaleY(scale).setDuration(120).start();
+            v.setElevation(hasFocus ? 10f : 0f);
+        });
         // A TV remote's OK button never triggers the framework's touch-based long-click
         // detection, so time the key press by hand: schedule a "long press" after the system
         // threshold on key-down, cancel it (and fall back to a normal click) on key-up.

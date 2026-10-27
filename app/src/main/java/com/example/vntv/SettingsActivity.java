@@ -62,7 +62,7 @@ public class SettingsActivity extends AppCompatActivity {
 
     private void refreshList() {
         List<String> urls = PlaylistStore.getUrls(this);
-        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, urls);
+        adapter = new ArrayAdapter<>(this, R.layout.item_playlist_url, android.R.id.text1, urls);
         listView.setAdapter(adapter);
     }
 }

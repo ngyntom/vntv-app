@@ -9,13 +9,30 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/channel_list_overlay"
+    <LinearLayout
+        android:id="@+id/overlay_panel"
         android:layout_width="320dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        android:background="#D0101010"
-        android:padding="10dp"
-        android:visibility="gone"
-        android:clipToPadding="false" />
+        android:orientation="vertical"
+        android:background="@drawable/overlay_panel_background"
+        android:visibility="gone">
+
+        <TextView
+            style="@style/TextAppearance.VnTv.SectionLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/overlay_header"
+            android:paddingHorizontal="18dp"
+            android:paddingTop="20dp"
+            android:paddingBottom="10dp" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/channel_list_overlay"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:paddingHorizontal="8dp"
+            android:clipToPadding="false" />
+    </LinearLayout>
 </FrameLayout>
