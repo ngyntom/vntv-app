@@ -48,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
     private List<Channel> allChannels = new ArrayList<>();
     private List<Channel> displayedChannels = new ArrayList<>();
     private boolean autoLaunched = false;
+    private boolean loading = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -117,22 +118,7 @@ public class MainActivity extends AppCompatActivity {
      *  so Up/Down works immediately instead of landing on an unrelated, unfocused category. */
     private void syncSidebarToLastPlayed() {
         PlaylistStore.setOnMenu(this, true);
-        String lastUrl = PlaylistStore.getLastPlayed(this);
-        if (lastUrl == null) return;
-        for (Channel c : allChannels) {
-            if (!lastUrl.equals(c.streamUrl)) continue;
-            String category = classify(c);
-            int index = categoryAdapter.indexOf(category);
-            if (index < 0) return;
-            categoryAdapter.setSelectedPosition(index);
-            filterByCategory(category);
-            categoryTabs.scrollToPosition(index);
-            categoryTabs.post(() -> {
-                RecyclerView.ViewHolder vh = categoryTabs.findViewHolderForAdapterPosition(index);
-                if (vh != null) vh.itemView.requestFocus();
-            });
-            return;
-        }
+        selectCategoryForUrl(PlaylistStore.getLastPlayed(this));
     }
 
     private void openChannel(Channel channel) {
@@ -181,6 +167,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadChannels() {
+        // onCreate() and the onResume() that immediately follows it both call this when
+        // allChannels is still empty (the first fetch hasn't posted its result back yet) -
+        // without this guard a fresh launch fired it twice, racing two fetches against
+        // each other and against the sidebar sync each one does once it completes.
+        if (loading) return;
+        loading = true;
         emptyView.setVisibility(View.GONE);
         executor.execute(() -> {
             // Cached copy from last time, read off disk - near-instant, so the grid (or an
@@ -206,6 +198,7 @@ public class MainActivity extends AppCompatActivity {
                 ChannelCache.save(this, all);
             }
             mainHandler.post(() -> {
+                loading = false;
                 progressBar.setVisibility(View.GONE);
                 if (!all.isEmpty()) {
                     applyLoadedChannels(all, true);
@@ -230,7 +223,50 @@ public class MainActivity extends AppCompatActivity {
         if (isNetwork && !autoLaunched) {
             PlaylistStore.setOnMenu(this, true);
         }
-        filterByCategory(currentCategory());
+        // A brand new MainActivity instance (e.g. the app was fully backed out of and reopened)
+        // starts with the sidebar's "selected" row hardcoded to Tổng hợp, but nothing has ever
+        // asked for D-pad focus yet - Android lands it on whatever row is first in traversal
+        // order instead, so the bright "focused" highlight and the "selected" highlight end up
+        // on two different rows. Point both at the same place: the last-played channel's
+        // category when there is one, otherwise whatever's already marked selected.
+        if (!selectCategoryForUrl(PlaylistStore.getLastPlayed(this))) {
+            filterByCategory(currentCategory());
+            focusCurrentCategory();
+        }
+    }
+
+    /** Finds category's channel in allChannels and moves the sidebar selection + D-pad focus
+     *  there. Returns false (leaving the sidebar untouched) if the URL isn't in the list. */
+    private boolean selectCategoryForUrl(String url) {
+        if (url == null) return false;
+        for (Channel c : allChannels) {
+            if (url.equals(c.streamUrl)) {
+                return selectCategoryInSidebar(classify(c));
+            }
+        }
+        return false;
+    }
+
+    private boolean selectCategoryInSidebar(String category) {
+        int index = categoryAdapter.indexOf(category);
+        if (index < 0) return false;
+        categoryAdapter.setSelectedPosition(index);
+        filterByCategory(category);
+        focusCategoryRow(index);
+        return true;
+    }
+
+    private void focusCurrentCategory() {
+        int index = categoryAdapter.indexOf(currentCategory());
+        if (index >= 0) focusCategoryRow(index);
+    }
+
+    private void focusCategoryRow(int index) {
+        categoryTabs.scrollToPosition(index);
+        categoryTabs.post(() -> {
+            RecyclerView.ViewHolder vh = categoryTabs.findViewHolderForAdapterPosition(index);
+            if (vh != null) vh.itemView.requestFocus();
+        });
     }
 
     /** If instantResumeIfPossible() already started playback, this just hands PlayerActivity
