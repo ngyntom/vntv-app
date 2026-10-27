@@ -34,7 +34,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String CAT_THVL = "THVL";
     private static final String CAT_OTHER = "Tổng hợp";
     private static final List<String> CATEGORIES = Arrays.asList(
-            CAT_FAVORITES, CAT_VTV, CAT_HTV, CAT_SCTV, CAT_THVL, CAT_OTHER,
+            CAT_FAVORITES, CAT_OTHER, CAT_SCTV, CAT_THVL, CAT_HTV, CAT_VTV,
             CategoryAdapter.ACTION_SETTINGS);
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -62,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
         adapter.setOnChannelLongClickListener(this::toggleFavorite);
         recyclerView.setAdapter(adapter);
 
-        // VTV comes up first by default (after Favorites, which is usually empty on first run).
+        // Default landing tab: first content category after Favorites (usually empty on first run).
         categoryAdapter = new CategoryAdapter(CATEGORIES, 1, this::onCategorySelected);
         categoryTabs.setAdapter(categoryAdapter);
 
@@ -269,7 +269,14 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         displayedChannels = filtered;
-        adapter.setChannels(displayedChannels);
+        // Deferred: this can be reached from a RecyclerView's own onFocusChangeListener while
+        // that RecyclerView (or another one on the same screen) is still mid-layout - e.g. right
+        // after MainActivity is freshly created and focus lands on a sidebar row as part of that
+        // very layout pass. Calling notifyDataSetChanged() synchronously in that window throws
+        // "Cannot call this method while RecyclerView is computing a layout or scrolling", which
+        // crashed the whole app (and from the outside looked like Back dropping to Home - the
+        // crash killed MainActivity before it could ever show). Posting it clears that window.
+        mainHandler.post(() -> adapter.setChannels(displayedChannels));
         boolean showEmpty = filtered.isEmpty() && !allChannels.isEmpty();
         if (showEmpty) {
             emptyView.setText(CAT_FAVORITES.equals(category) ? R.string.no_favorites : R.string.no_channels);
