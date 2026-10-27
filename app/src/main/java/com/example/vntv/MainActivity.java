@@ -181,9 +181,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadChannels() {
-        progressBar.setVisibility(View.VISIBLE);
         emptyView.setVisibility(View.GONE);
         executor.execute(() -> {
+            // Cached copy from last time, read off disk - near-instant, so the grid (or an
+            // instant-resume lookup) doesn't have to sit on the network fetch below just to
+            // show something. It's posted on its own, separately from the fetch, so the UI
+            // updates the moment this is ready instead of waiting for both.
+            List<Channel> cached = ChannelCache.load(this);
+            if (!cached.isEmpty()) {
+                mainHandler.post(() -> applyLoadedChannels(cached, false));
+            } else {
+                mainHandler.post(() -> progressBar.setVisibility(View.VISIBLE));
+            }
+
             List<Channel> all = new ArrayList<>();
             for (String url : PlaylistStore.getUrls(this)) {
                 try {
@@ -192,19 +202,35 @@ public class MainActivity extends AppCompatActivity {
                     Log.w(TAG, "failed to load " + url, e);
                 }
             }
+            if (!all.isEmpty()) {
+                ChannelCache.save(this, all);
+            }
             mainHandler.post(() -> {
                 progressBar.setVisibility(View.GONE);
-                allChannels = all;
-                emptyView.setVisibility(all.isEmpty() ? View.VISIBLE : View.GONE);
-                if (all.isEmpty()) {
+                if (!all.isEmpty()) {
+                    applyLoadedChannels(all, true);
+                } else if (allChannels.isEmpty()) {
+                    emptyView.setVisibility(View.VISIBLE);
                     Toast.makeText(this, R.string.load_failed, Toast.LENGTH_LONG).show();
-                }
-                if (!finishInstantResume(all) && !maybeAutoResume(all)) {
-                    PlaylistStore.setOnMenu(this, true);
-                    filterByCategory(currentCategory());
                 }
             });
         });
+    }
+
+    /** Wires up a freshly available channel list, whether it came from the on-disk cache or the
+     *  network fetch: tries an instant-resume launch first, otherwise just refreshes the grid.
+     *  isNetwork is only used to decide whether to mark "on the menu" - a cache-triggered pass
+     *  that found nothing to auto-launch still leaves that decision to the network pass that
+     *  follows right after, so a stale cache can't flip it incorrectly if the network list (or
+     *  the launch it triggers) hasn't resolved yet. */
+    private void applyLoadedChannels(List<Channel> channels, boolean isNetwork) {
+        allChannels = channels;
+        boolean launched = finishInstantResume(channels) || maybeAutoResume(channels);
+        if (launched) return;
+        if (isNetwork && !autoLaunched) {
+            PlaylistStore.setOnMenu(this, true);
+        }
+        filterByCategory(currentCategory());
     }
 
     /** If instantResumeIfPossible() already started playback, this just hands PlayerActivity
