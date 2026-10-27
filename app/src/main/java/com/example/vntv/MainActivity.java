@@ -277,12 +277,7 @@ public class MainActivity extends AppCompatActivity {
         // "Cannot call this method while RecyclerView is computing a layout or scrolling", which
         // crashed the whole app (and from the outside looked like Back dropping to Home - the
         // crash killed MainActivity before it could ever show). Posting it clears that window.
-        // Fade the grid out, swap its contents, fade back in - a quick, soft transition instead
-        // of the list just snapping to new content when the sidebar selection changes.
-        mainHandler.post(() -> channelGrid.animate().alpha(0f).setDuration(90).withEndAction(() -> {
-            adapter.setChannels(displayedChannels);
-            channelGrid.animate().alpha(1f).setDuration(150).start();
-        }).start());
+        mainHandler.post(() -> adapter.setChannels(displayedChannels));
         boolean showEmpty = filtered.isEmpty() && !allChannels.isEmpty();
         if (showEmpty) {
             emptyView.setText(CAT_FAVORITES.equals(category) ? R.string.no_favorites : R.string.no_channels);
