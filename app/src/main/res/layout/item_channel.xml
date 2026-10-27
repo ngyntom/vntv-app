@@ -12,11 +12,9 @@
 
     <ImageView
         android:id="@+id/channel_logo"
-        android:layout_width="78dp"
-        android:layout_height="78dp"
+        android:layout_width="84dp"
+        android:layout_height="84dp"
         android:layout_marginBottom="8dp"
-        android:background="@drawable/logo_chip_background"
-        android:padding="12dp"
         android:scaleType="fitCenter"
         android:contentDescription="@null" />
 
