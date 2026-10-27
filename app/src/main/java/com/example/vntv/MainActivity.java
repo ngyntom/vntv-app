@@ -40,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private ChannelAdapter adapter;
+    private RecyclerView channelGrid;
     private RecyclerView categoryTabs;
     private CategoryAdapter categoryAdapter;
     private TextView emptyView;
@@ -52,15 +53,15 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        RecyclerView recyclerView = findViewById(R.id.channel_grid);
+        channelGrid = findViewById(R.id.channel_grid);
         categoryTabs = findViewById(R.id.category_tabs);
         emptyView = findViewById(R.id.empty_view);
         progressBar = findViewById(R.id.progress_bar);
-        recyclerView.setLayoutManager(new GridLayoutManager(this, 4));
+        channelGrid.setLayoutManager(new GridLayoutManager(this, 4));
         categoryTabs.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         adapter = new ChannelAdapter(new ArrayList<>(), this::openChannel);
         adapter.setOnChannelLongClickListener(this::toggleFavorite);
-        recyclerView.setAdapter(adapter);
+        channelGrid.setAdapter(adapter);
 
         // Default landing tab: first content category after Favorites (usually empty on first run).
         categoryAdapter = new CategoryAdapter(CATEGORIES, 1, this::onCategorySelected);
@@ -276,7 +277,12 @@ public class MainActivity extends AppCompatActivity {
         // "Cannot call this method while RecyclerView is computing a layout or scrolling", which
         // crashed the whole app (and from the outside looked like Back dropping to Home - the
         // crash killed MainActivity before it could ever show). Posting it clears that window.
-        mainHandler.post(() -> adapter.setChannels(displayedChannels));
+        // Fade the grid out, swap its contents, fade back in - a quick, soft transition instead
+        // of the list just snapping to new content when the sidebar selection changes.
+        mainHandler.post(() -> channelGrid.animate().alpha(0f).setDuration(90).withEndAction(() -> {
+            adapter.setChannels(displayedChannels);
+            channelGrid.animate().alpha(1f).setDuration(150).start();
+        }).start());
         boolean showEmpty = filtered.isEmpty() && !allChannels.isEmpty();
         if (showEmpty) {
             emptyView.setText(CAT_FAVORITES.equals(category) ? R.string.no_favorites : R.string.no_channels);
