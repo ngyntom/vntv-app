@@ -54,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean loading = false;
     private long lastNavKeyAt = 0;
     private boolean pendingHotkey = false;
+    private static boolean instantResumeDone = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,10 +85,13 @@ public class MainActivity extends AppCompatActivity {
         if (savedInstanceState == null) {
             if (isHotkeyIntent(getIntent())) {
                 pendingHotkey = true;
-            } else {
+            } else if (!instantResumeDone) {
                 instantResumeIfPossible();
             }
         }
+        // Once per process: as the box's Home, pressing Home mid-playback creates a fresh
+        // instance here, and that should land on the grid rather than replay the channel.
+        instantResumeDone = true;
         loadChannels();
     }
 
