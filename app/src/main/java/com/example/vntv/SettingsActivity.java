@@ -6,7 +6,6 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -27,17 +26,11 @@ public class SettingsActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
-        EditText input = findViewById(R.id.url_input);
+        TvEditText input = findViewById(R.id.url_input);
         Button addButton = findViewById(R.id.add_button);
         listView = findViewById(R.id.url_list);
 
-        // On a TV the keyboard would pop up the moment D-pad focus touched the field and then
-        // swallow the arrow keys; only bring it up when the field is actually clicked (OK).
-        input.setShowSoftInputOnFocus(false);
-        input.setOnClickListener(v -> {
-            InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
-            if (imm != null) imm.showSoftInput(input, 0);
-        });
+        input.setOnClickListener(v -> input.openKeyboard());
 
         refreshList();
 
@@ -48,6 +41,11 @@ public class SettingsActivity extends AppCompatActivity {
                 input.setText("");
                 refreshList();
             }
+        });
+        input.setOnEditorActionListener((v, actionId, event) -> {
+            input.closeKeyboard();
+            addButton.performClick();
+            return true;
         });
 
         listView.setOnItemLongClickListener((parent, view, position, id) -> {
