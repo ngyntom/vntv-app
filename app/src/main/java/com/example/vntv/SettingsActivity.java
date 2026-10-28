@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -29,6 +30,14 @@ public class SettingsActivity extends AppCompatActivity {
         EditText input = findViewById(R.id.url_input);
         Button addButton = findViewById(R.id.add_button);
         listView = findViewById(R.id.url_list);
+
+        // On a TV the keyboard would pop up the moment D-pad focus touched the field and then
+        // swallow the arrow keys; only bring it up when the field is actually clicked (OK).
+        input.setShowSoftInputOnFocus(false);
+        input.setOnClickListener(v -> {
+            InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+            if (imm != null) imm.showSoftInput(input, 0);
+        });
 
         refreshList();
 
@@ -62,6 +71,7 @@ public class SettingsActivity extends AppCompatActivity {
         TextView hotkeyValue = findViewById(R.id.hotkey_value);
         refreshHotkey(hotkeyValue);
         findViewById(R.id.hotkey_button).setOnClickListener(v -> chooseHotkeyChannel(hotkeyValue));
+        findViewById(R.id.hotkey_button).requestFocus();
         findViewById(R.id.system_settings_button).setOnClickListener(v ->
                 startActivity(new Intent(Settings.ACTION_SETTINGS)));
 

@@ -57,6 +57,7 @@
         <activity
             android:name=".SettingsActivity"
             android:exported="false"
+            android:windowSoftInputMode="stateAlwaysHidden"
             android:screenOrientation="landscape" />
     </application>
 </manifest>
