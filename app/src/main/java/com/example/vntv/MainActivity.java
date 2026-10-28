@@ -55,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
     private long lastNavKeyAt = 0;
     private boolean pendingHotkey = false;
     private static boolean instantResumeDone = false;
+    private ClockBinder clock;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
         categoryTabs = findViewById(R.id.category_tabs);
         emptyView = findViewById(R.id.empty_view);
         progressBar = findViewById(R.id.progress_bar);
+        clock = new ClockBinder(findViewById(R.id.time_text), findViewById(R.id.date_text));
         channelGrid.setLayoutManager(new GridLayoutManager(this, 4));
         categoryTabs.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         adapter = new ChannelAdapter(new ArrayList<>(), this::openChannel);
@@ -158,8 +160,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onPause() {
+        super.onPause();
+        clock.stop();
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
+        clock.start();
         if (allChannels.isEmpty()) {
             loadChannels();
         } else {

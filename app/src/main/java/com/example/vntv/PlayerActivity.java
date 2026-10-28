@@ -25,6 +25,7 @@ public class PlayerActivity extends AppCompatActivity {
     private ExoPlayer player;
     private PlayerView playerView;
     private View overlayPanel;
+    private ClockBinder overlayClock;
     private RecyclerView channelListOverlay;
     private ChannelAdapter overlayAdapter;
     private List<Channel> channels;
@@ -38,6 +39,7 @@ public class PlayerActivity extends AppCompatActivity {
         playerView = findViewById(R.id.player_view);
         overlayPanel = findViewById(R.id.overlay_panel);
         channelListOverlay = findViewById(R.id.channel_list_overlay);
+        overlayClock = new ClockBinder(findViewById(R.id.overlay_time), null);
 
         channels = ChannelHolder.current;
         currentIndex = getIntent().getIntExtra(EXTRA_INDEX, -1);
@@ -60,6 +62,7 @@ public class PlayerActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         PlaylistStore.setOnMenu(this, false);
+        if (overlayVisible) overlayClock.start();
         if (player != null) return;
         player = new ExoPlayer.Builder(this).build();
         playerView.setPlayer(player);
@@ -123,7 +126,11 @@ public class PlayerActivity extends AppCompatActivity {
     private void setOverlayVisible(boolean visible) {
         overlayVisible = visible;
         overlayPanel.setVisibility(visible ? View.VISIBLE : View.GONE);
-        if (!visible) return;
+        if (!visible) {
+            overlayClock.stop();
+            return;
+        }
+        overlayClock.start();
         if (currentIndex >= 0 && currentIndex < channels.size()) {
             channelListOverlay.scrollToPosition(currentIndex);
             channelListOverlay.post(() -> {
@@ -192,6 +199,7 @@ public class PlayerActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
+        overlayClock.stop();
         ChannelHolder.setListener(null);
         if (player != null) {
             player.release();
