@@ -1,6 +1,8 @@
 package com.example.vntv;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -51,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean autoLaunched = false;
     private boolean loading = false;
     private long lastNavKeyAt = 0;
+    private boolean pendingHotkey = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,9 +82,58 @@ public class MainActivity extends AppCompatActivity {
         // auto-resuming there would hijack the user's own Back press into bouncing straight
         // back into playback instead of landing on the channel grid.
         if (savedInstanceState == null) {
-            instantResumeIfPossible();
+            if (isHotkeyIntent(getIntent())) {
+                pendingHotkey = true;
+            } else {
+                instantResumeIfPossible();
+            }
         }
         loadChannels();
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if (isHotkeyIntent(intent)) {
+            pendingHotkey = true;
+            if (!allChannels.isEmpty()) consumeHotkey();
+        }
+    }
+
+    private static boolean isHotkeyIntent(Intent intent) {
+        return intent != null && Intent.ACTION_VIEW.equals(intent.getAction())
+                && intent.getData() != null && "nflx".equals(intent.getData().getScheme());
+    }
+
+    /** Opens the channel assigned to the Netflix key (falls back to the last-played one). */
+    private boolean consumeHotkey() {
+        pendingHotkey = false;
+        String url = PlaylistStore.getHotkeyUrl(this);
+        if (url == null) url = PlaylistStore.getLastPlayed(this);
+        if (url == null) return false;
+        for (Channel c : allChannels) {
+            if (url.equals(c.streamUrl)) {
+                autoLaunched = true;
+                openChannel(c);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public void onBackPressed() {
+        // As the box's Home screen there's nothing behind this to go back to.
+        if (isDefaultHome()) return;
+        super.onBackPressed();
+    }
+
+    private boolean isDefaultHome() {
+        Intent home = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME);
+        ResolveInfo info = getPackageManager().resolveActivity(home, PackageManager.MATCH_DEFAULT_ONLY);
+        return info != null && info.activityInfo != null
+                && getPackageName().equals(info.activityInfo.packageName);
     }
 
     /** Resuming the last-played channel shouldn't wait on a full playlist re-fetch over the
@@ -223,6 +275,7 @@ public class MainActivity extends AppCompatActivity {
      *  the launch it triggers) hasn't resolved yet. */
     private void applyLoadedChannels(List<Channel> channels, boolean isNetwork) {
         allChannels = channels;
+        if (pendingHotkey && consumeHotkey()) return;
         boolean launched = finishInstantResume(channels) || maybeAutoResume(channels);
         if (launched) return;
         if (isNetwork && !autoLaunched) {

@@ -64,6 +64,24 @@ public class PlaylistStore {
         return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_LAST_PLAYED_NAME, null);
     }
 
+    private static final String KEY_HOTKEY_URL = "hotkey_url";
+    private static final String KEY_HOTKEY_NAME = "hotkey_name";
+
+    public static void setHotkeyChannel(Context ctx, String url, String name) {
+        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                .putString(KEY_HOTKEY_URL, url)
+                .putString(KEY_HOTKEY_NAME, name)
+                .apply();
+    }
+
+    public static String getHotkeyUrl(Context ctx) {
+        return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_HOTKEY_URL, null);
+    }
+
+    public static String getHotkeyName(Context ctx) {
+        return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_HOTKEY_NAME, null);
+    }
+
     private static final String KEY_ON_MENU = "on_menu";
 
     /** Where the user actually left off: true once the channel grid is genuinely on screen

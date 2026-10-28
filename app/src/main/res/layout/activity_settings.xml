@@ -124,4 +124,37 @@
                 android:text="@string/clear_favorites" />
         </LinearLayout>
     </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@drawable/card_background"
+        android:padding="20dp">
+
+        <TextView
+            android:id="@+id/hotkey_value"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/hotkey_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            style="@style/Widget.VnTv.Button"
+            android:text="@string/hotkey_choose" />
+
+        <Button
+            android:id="@+id/system_settings_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/Widget.VnTv.Button"
+            android:text="@string/system_settings" />
+    </LinearLayout>
 </LinearLayout>

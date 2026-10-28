@@ -1,6 +1,8 @@
 package com.example.vntv;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -9,6 +11,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.util.List;
@@ -53,6 +56,35 @@ public class SettingsActivity extends AppCompatActivity {
             refreshFavorites(favoritesValue);
             Toast.makeText(this, R.string.favorites_cleared, Toast.LENGTH_SHORT).show();
         });
+
+        TextView hotkeyValue = findViewById(R.id.hotkey_value);
+        refreshHotkey(hotkeyValue);
+        findViewById(R.id.hotkey_button).setOnClickListener(v -> chooseHotkeyChannel(hotkeyValue));
+        findViewById(R.id.system_settings_button).setOnClickListener(v ->
+                startActivity(new Intent(Settings.ACTION_SETTINGS)));
+    }
+
+    private void refreshHotkey(TextView view) {
+        String name = PlaylistStore.getHotkeyName(this);
+        view.setText(getString(R.string.hotkey_value, name != null ? name : getString(R.string.hotkey_unset)));
+    }
+
+    private void chooseHotkeyChannel(TextView valueView) {
+        List<Channel> channels = ChannelCache.load(this);
+        if (channels.isEmpty()) {
+            Toast.makeText(this, R.string.hotkey_no_channels, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String[] names = new String[channels.size()];
+        for (int i = 0; i < names.length; i++) names[i] = channels.get(i).name;
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.hotkey_dialog_title)
+                .setItems(names, (dialog, which) -> {
+                    Channel c = channels.get(which);
+                    PlaylistStore.setHotkeyChannel(this, c.streamUrl, c.name);
+                    refreshHotkey(valueView);
+                })
+                .show();
     }
 
     private void refreshFavorites(TextView view) {

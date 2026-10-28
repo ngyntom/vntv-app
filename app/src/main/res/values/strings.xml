@@ -22,4 +22,10 @@
     <string name="favorites_count">Số kênh yêu thích: %1$d</string>
     <string name="clear_favorites">Xoá tất cả yêu thích</string>
     <string name="favorites_cleared">Đã xoá danh sách yêu thích</string>
+    <string name="hotkey_value">Nút Netflix trên remote mở kênh: %1$s</string>
+    <string name="hotkey_unset">kênh đang xem gần nhất</string>
+    <string name="hotkey_choose">Chọn kênh</string>
+    <string name="hotkey_dialog_title">Kênh cho nút Netflix</string>
+    <string name="hotkey_no_channels">Chưa tải được danh sách kênh</string>
+    <string name="system_settings">Cài đặt hệ thống</string>
 </resources>
