@@ -1,6 +1,8 @@
 package com.example.vntv;
 
+import android.content.ComponentName;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
@@ -62,6 +64,37 @@ public class SettingsActivity extends AppCompatActivity {
         findViewById(R.id.hotkey_button).setOnClickListener(v -> chooseHotkeyChannel(hotkeyValue));
         findViewById(R.id.system_settings_button).setOnClickListener(v ->
                 startActivity(new Intent(Settings.ACTION_SETTINGS)));
+
+        TextView homeValue = findViewById(R.id.home_value);
+        Button homeButton = findViewById(R.id.home_button);
+        refreshHome(homeValue, homeButton);
+        homeButton.setOnClickListener(v -> {
+            boolean enable = !isHomeAliasEnabled();
+            getPackageManager().setComponentEnabledSetting(homeAlias(),
+                    enable ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+                            : PackageManager.COMPONENT_ENABLED_STATE_DEFAULT,
+                    PackageManager.DONT_KILL_APP);
+            refreshHome(homeValue, homeButton);
+            if (enable) {
+                // Lets Android ask which Home to use, where "Always" makes VnTV the default.
+                startActivity(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME));
+            }
+        });
+    }
+
+    private ComponentName homeAlias() {
+        return new ComponentName(this, getPackageName() + ".HomeAlias");
+    }
+
+    private boolean isHomeAliasEnabled() {
+        return getPackageManager().getComponentEnabledSetting(homeAlias())
+                == PackageManager.COMPONENT_ENABLED_STATE_ENABLED;
+    }
+
+    private void refreshHome(TextView value, Button button) {
+        boolean on = isHomeAliasEnabled();
+        value.setText(on ? R.string.home_on : R.string.home_off);
+        button.setText(on ? R.string.home_disable : R.string.home_enable);
     }
 
     private void refreshHotkey(TextView view) {

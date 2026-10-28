@@ -35,8 +35,8 @@
             </intent-filter>
         </activity>
 
-        <!-- Off by default so installing VnTV never hijacks Home; enabled per device with
-             `pm enable com.example.vntv/.HomeAlias`. -->
+        <!-- Off by default so installing VnTV never hijacks Home; the app turns it on from its
+             own Settings screen (adb shell can't toggle components of a non-test app). -->
         <activity-alias
             android:name=".HomeAlias"
             android:targetActivity=".MainActivity"

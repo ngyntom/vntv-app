@@ -28,4 +28,8 @@
     <string name="hotkey_dialog_title">Kênh cho nút Netflix</string>
     <string name="hotkey_no_channels">Chưa tải được danh sách kênh</string>
     <string name="system_settings">Cài đặt hệ thống</string>
+    <string name="home_on">VnTV đang có thể làm màn hình chính của thiết bị</string>
+    <string name="home_off">VnTV chưa làm màn hình chính</string>
+    <string name="home_enable">Đặt làm màn hình chính</string>
+    <string name="home_disable">Bỏ làm màn hình chính</string>
 </resources>
