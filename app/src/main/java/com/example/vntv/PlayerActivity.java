@@ -38,6 +38,7 @@ public class PlayerActivity extends AppCompatActivity {
     private View overlayPanel;
     private TextView clockView;
     private TextView overlayCount;
+    private NumberEntry numberEntry;
     private ClockBinder clock;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable sampleClockBackground = this::sampleClockBackground;
@@ -61,6 +62,7 @@ public class PlayerActivity extends AppCompatActivity {
         overlayPanel = findViewById(R.id.overlay_panel);
         channelListOverlay = findViewById(R.id.channel_list_overlay);
         overlayCount = findViewById(R.id.overlay_count);
+        numberEntry = new NumberEntry(findViewById(R.id.number_input), this::tuneToNumber);
         clockView = findViewById(R.id.playing_time);
         clock = new ClockBinder(clockView, null);
 
@@ -198,6 +200,25 @@ public class PlayerActivity extends AppCompatActivity {
     }
 
     @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (numberEntry.onKeyDown(keyCode, event)) return true;
+        return super.onKeyDown(keyCode, event);
+    }
+
+    private void tuneToNumber(int number) {
+        Channel channel = ChannelNumbers.byNumber(number);
+        if (channel == null) {
+            numberEntry.show(getString(R.string.no_channel_number, number));
+            return;
+        }
+        int index = channels.indexOf(channel);
+        if (index >= 0) currentIndex = index;
+        play(channel);
+        setOverlayVisible(false);
+        numberEntry.show(getString(R.string.channel_number_name, number, channel.name));
+    }
+
+    @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER) {
             if (!overlayVisible && !channels.isEmpty()) {
@@ -324,6 +345,7 @@ public class PlayerActivity extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
         clock.stop();
+        numberEntry.cancel();
         handler.removeCallbacks(sampleClockBackground);
         ChannelHolder.setListener(null);
         if (player != null) {

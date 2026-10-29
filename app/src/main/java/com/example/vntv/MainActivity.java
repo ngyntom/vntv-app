@@ -60,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean pendingHotkey = false;
     private static boolean instantResumeDone = false;
     private ClockBinder clock;
+    private NumberEntry numberEntry;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
         emptyView = findViewById(R.id.empty_view);
         progressBar = findViewById(R.id.progress_bar);
         clock = new ClockBinder(findViewById(R.id.time_text), findViewById(R.id.date_text));
+        numberEntry = new NumberEntry(findViewById(R.id.number_input), this::openChannelNumber);
         channelGrid.setLayoutManager(new GridLayoutManager(this, 4));
         categoryTabs.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         adapter = new ChannelAdapter(new ArrayList<>(), this::openChannel);
@@ -180,6 +182,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         clock.stop();
+        numberEntry.cancel();
     }
 
     @Override
@@ -345,6 +348,7 @@ public class MainActivity extends AppCompatActivity {
      *  the launch it triggers) hasn't resolved yet. */
     private void applyLoadedChannels(List<Channel> channels, boolean isNetwork) {
         allChannels = channels;
+        if (ChannelNumbers.set(channels)) mainHandler.post(() -> adapter.refreshNumbers());
         updateCategoryCounts();
         if (pendingHotkey && consumeHotkey()) return;
         boolean launched = finishInstantResume(channels) || maybeAutoResume(channels);
@@ -564,6 +568,22 @@ public class MainActivity extends AppCompatActivity {
         } else {
             focusCategoryRow(index);
         }
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (numberEntry.onKeyDown(keyCode, event)) return true;
+        return super.onKeyDown(keyCode, event);
+    }
+
+    private void openChannelNumber(int number) {
+        Channel channel = ChannelNumbers.byNumber(number);
+        if (channel == null) {
+            numberEntry.show(getString(R.string.no_channel_number, number));
+            return;
+        }
+        numberEntry.cancel();
+        openChannel(channel);
     }
 
     @Override

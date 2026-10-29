@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.example.vntv.TvEditText xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/url_input"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    style="@style/Widget.VnTv.EditText"
+    android:inputType="textUri"
+    android:imeOptions="actionDone"
+    android:hint="@string/url_hint" />

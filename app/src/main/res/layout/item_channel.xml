@@ -1,45 +1,61 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="176dp"
     android:layout_margin="7dp"
     android:background="@drawable/tile_background"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:padding="10dp"
     android:focusable="true"
     android:clickable="true">
 
-    <ImageView
-        android:id="@+id/channel_logo"
-        android:layout_width="84dp"
-        android:layout_height="84dp"
-        android:layout_marginBottom="8dp"
-        android:scaleType="fitCenter"
-        android:contentDescription="@null" />
-
-    <TextView
-        android:id="@+id/channel_name"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
         android:gravity="center"
-        android:paddingHorizontal="4dp"
-        android:textColor="@color/text_primary"
-        android:fontFamily="sans-serif-medium"
-        android:textSize="13sp"
-        android:maxLines="2"
-        android:ellipsize="end" />
+        android:padding="10dp">
+
+        <ImageView
+            android:id="@+id/channel_logo"
+            android:layout_width="84dp"
+            android:layout_height="84dp"
+            android:layout_marginBottom="8dp"
+            android:scaleType="fitCenter"
+            android:contentDescription="@null" />
+
+        <TextView
+            android:id="@+id/channel_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:paddingHorizontal="4dp"
+            android:textColor="@color/text_primary"
+            android:fontFamily="sans-serif-medium"
+            android:textSize="13sp"
+            android:maxLines="2"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/channel_quality"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="2dp"
+            android:background="@drawable/quality_badge"
+            android:textColor="@color/accent_light"
+            android:fontFamily="sans-serif-medium"
+            android:textSize="10sp"
+            android:visibility="gone" />
+    </LinearLayout>
 
     <TextView
-        android:id="@+id/channel_quality"
+        android:id="@+id/channel_number"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:paddingHorizontal="8dp"
-        android:paddingVertical="2dp"
-        android:background="@drawable/quality_badge"
-        android:textColor="@color/accent_light"
+        android:layout_gravity="top|start"
+        android:layout_marginTop="10dp"
+        android:layout_marginStart="14dp"
+        android:textColor="@color/text_secondary"
         android:fontFamily="sans-serif-medium"
-        android:textSize="10sp"
-        android:visibility="gone" />
-</LinearLayout>
+        android:textSize="15sp" />
+</FrameLayout>

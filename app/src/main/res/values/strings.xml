@@ -1,44 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">VnTV</string>
-    <string name="no_channels">Không tải được kênh nào. Vào Settings để kiểm tra nguồn.</string>
-    <string name="no_favorites">Chưa có kênh yêu thích nào.\nGiữ (long-press) một kênh để thêm vào đây.</string>
+    <string name="no_channels">Không tải được kênh nào. Vào Cài đặt để kiểm tra nguồn kênh.</string>
+    <string name="no_favorites">Chưa có kênh yêu thích nào.\nGiữ nút OK trên một kênh để thêm vào đây.</string>
     <string name="load_failed">Không tải được danh sách kênh</string>
     <string name="playback_error">Không phát được kênh này</string>
-    <string name="settings_screen_title">Cài đặt</string>
-    <string name="settings_title">Nguồn danh sách kênh (M3U)</string>
-    <string name="favorites_section_title">Yêu thích</string>
-    <string name="url_hint">Dán link .m3u / .m3u8</string>
-    <string name="add">Thêm</string>
-    <string name="remove_hint">Giữ (long-press) một link để xoá</string>
-    <string name="removed">Đã xoá</string>
     <string name="added_favorite">Đã thêm vào yêu thích: %1$s</string>
     <string name="removed_favorite">Đã bỏ khỏi yêu thích: %1$s</string>
-    <string name="default_channel_hint">Giữ (long-press) một kênh ở màn hình chính để thêm/bỏ khỏi Yêu thích. Mở app sẽ tự phát lại kênh đang xem gần nhất (nếu chưa xem lần nào thì phát kênh yêu thích đầu tiên).</string>
     <string name="sidebar_header">DANH MỤC</string>
     <string name="brand_prefix">VN</string>
     <string name="brand_suffix">TV</string>
     <string name="overlay_header">DANH SÁCH KÊNH</string>
     <string name="overlay_count">%1$d kênh</string>
-    <string name="favorites_count">Số kênh yêu thích: %1$d</string>
-    <string name="clear_favorites">Xoá tất cả yêu thích</string>
-    <string name="favorites_cleared">Đã xoá danh sách yêu thích</string>
-    <string name="hotkey_value">Nút Netflix trên remote mở kênh: %1$s</string>
-    <string name="hotkey_unset">kênh đang xem gần nhất</string>
-    <string name="hotkey_choose">Chọn kênh</string>
+    <string name="no_channel_number">Không có kênh %1$d</string>
+    <string name="channel_number_name">%1$d  %2$s</string>
+
+    <!-- Settings screen -->
+    <string name="settings_screen_title">Cài đặt</string>
+    <string name="section_channels">KÊNH</string>
+    <string name="section_display">HIỂN THỊ</string>
+    <string name="section_device">THIẾT BỊ</string>
+
+    <string name="hotkey_title">Nút Netflix mở kênh</string>
+    <string name="hotkey_unset">Kênh đang xem gần nhất</string>
+    <string name="hotkey_desc">Bấm nút Netflix trên remote ở bất kỳ đâu là mở ngay kênh này.\n\nBấm OK để chọn kênh khác.</string>
     <string name="hotkey_dialog_title">Kênh cho nút Netflix</string>
     <string name="hotkey_no_channels">Chưa tải được danh sách kênh</string>
-    <string name="system_settings">Cài đặt hệ thống</string>
-    <string name="home_on">VnTV đang có thể làm màn hình chính của thiết bị</string>
-    <string name="home_off">VnTV chưa làm màn hình chính</string>
-    <string name="home_enable">Đặt làm màn hình chính</string>
-    <string name="home_disable">Bỏ làm màn hình chính</string>
-    <string name="clock_value">Đồng hồ khi xem kênh: %1$s</string>
-    <string name="clock_change">Đổi vị trí</string>
+
+    <string name="favorites_title">Kênh yêu thích</string>
+    <string name="favorites_value">%1$d kênh</string>
+    <string name="favorites_desc">Muốn thêm kênh yêu thích: ở màn hình kênh, giữ nút OK trên kênh đó.\n\nBấm OK ở đây để xoá hết danh sách yêu thích.</string>
+    <string name="favorites_confirm">Xoá tất cả %1$d kênh yêu thích?</string>
+    <string name="favorites_empty">Chưa có kênh yêu thích nào</string>
+    <string name="favorites_cleared">Đã xoá danh sách yêu thích</string>
+
+    <string name="sources_title">Nguồn danh sách kênh</string>
+    <string name="sources_value">%1$d nguồn</string>
+    <string name="sources_desc">Các danh sách kênh (link .m3u) mà app tải về và gộp lại.\n\nBấm OK để thêm nguồn mới hoặc xoá nguồn.</string>
+    <string name="sources_add">+ Thêm nguồn mới</string>
+    <string name="sources_remove_confirm">Xoá nguồn này?\n\n%1$s</string>
+    <string name="sources_add_title">Thêm nguồn kênh</string>
+    <string name="url_hint">Dán link .m3u / .m3u8</string>
+    <string name="removed">Đã xoá</string>
+    <string name="added">Đã thêm nguồn</string>
+
+    <string name="clock_title">Vị trí đồng hồ khi xem kênh</string>
+    <string name="clock_desc">Đồng hồ hiện ở một góc màn hình trong lúc xem.\n\nBấm OK để chuyển sang góc khác nếu đồng hồ che logo kênh.</string>
     <string-array name="clock_positions">
-        <item>góc trên trái</item>
-        <item>góc trên phải</item>
-        <item>góc dưới trái</item>
-        <item>góc dưới phải</item>
+        <item>Góc trên trái</item>
+        <item>Góc trên phải</item>
+        <item>Góc dưới trái</item>
+        <item>Góc dưới phải</item>
     </string-array>
+
+    <string name="home_title">Dùng VnTV làm màn hình chính</string>
+    <string name="home_on">Đang bật</string>
+    <string name="home_off">Đang tắt</string>
+    <string name="home_desc">Khi bật, mở thiết bị hoặc bấm nút Home là vào thẳng VnTV.\n\nBấm OK để bật hoặc tắt.</string>
+
+    <string name="system_title">Cài đặt hệ thống</string>
+    <string name="system_value">Wi-Fi, âm thanh, ngày giờ…</string>
+    <string name="system_desc">Mở phần cài đặt của thiết bị để chỉnh mạng Wi-Fi, âm thanh, ngày giờ và các mục khác.</string>
+
+    <string name="yes">Có</string>
+    <string name="no">Không</string>
+    <string name="add">Thêm</string>
 </resources>

@@ -58,6 +58,23 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.VH> {
         notifyDataSetChanged();
     }
 
+    private static final String NUMBER_PAYLOAD = "number";
+
+    /** Re-labels channel numbers in place; a full rebind would drop D-pad focus. */
+    public void refreshNumbers() {
+        notifyItemRangeChanged(0, channels.size(), NUMBER_PAYLOAD);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull VH holder, int position, @NonNull List<Object> payloads) {
+        if (payloads.contains(NUMBER_PAYLOAD)) {
+            int number = ChannelNumbers.numberOf(channels.get(position));
+            holder.number.setText(number > 0 ? String.valueOf(number) : "");
+            return;
+        }
+        onBindViewHolder(holder, position);
+    }
+
     public int getItemCountPublic() {
         return channels.size();
     }
@@ -73,6 +90,8 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.VH> {
     public void onBindViewHolder(@NonNull VH holder, int position) {
         Channel c = channels.get(position);
         holder.name.setText(c.name);
+        int number = ChannelNumbers.numberOf(c);
+        holder.number.setText(number > 0 ? String.valueOf(number) : "");
         holder.itemView.setOnClickListener(v -> listener.onClick(c));
         if (focusScale != 1f) {
             holder.itemView.setOnFocusChangeListener((v, hasFocus) -> {
@@ -135,6 +154,7 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.VH> {
 
     static class VH extends RecyclerView.ViewHolder {
         TextView name;
+        TextView number;
         TextView quality;
         ImageView logo;
         boolean longPressTriggered;
@@ -142,6 +162,7 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.VH> {
         VH(View itemView) {
             super(itemView);
             name = itemView.findViewById(R.id.channel_name);
+            number = itemView.findViewById(R.id.channel_number);
             quality = itemView.findViewById(R.id.channel_quality);
             logo = itemView.findViewById(R.id.channel_logo);
         }

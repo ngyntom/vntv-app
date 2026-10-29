@@ -63,4 +63,19 @@
         android:shadowColor="#B3000000"
         android:shadowDy="1"
         android:shadowRadius="8" />
+
+    <TextView
+        android:id="@+id/number_input"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_marginTop="32dp"
+        android:layout_marginStart="40dp"
+        android:background="@drawable/number_badge_background"
+        android:paddingHorizontal="24dp"
+        android:paddingVertical="8dp"
+        android:textColor="#FFFFFFFF"
+        android:fontFamily="sans-serif-medium"
+        android:textSize="40sp"
+        android:visibility="gone" />
 </FrameLayout>
