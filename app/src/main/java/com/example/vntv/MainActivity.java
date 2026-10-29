@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -273,8 +274,20 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         counts.put(CAT_FAVORITES, favorites);
+
+        // Broadcaster groups show their first channel's logo (VTV1, HTV1, ...) as the icon.
+        Map<String, String> logos = new HashMap<>();
+        for (Channel c : allChannels) {
+            String cat = classify(c);
+            if (CAT_OTHER.equals(cat) || logos.containsKey(cat) || TextUtils.isEmpty(c.logoUrl)) continue;
+            logos.put(cat, c.logoUrl);
+        }
+
         // Posted for the same reason as filterByCategory: this can run mid-layout.
-        mainHandler.post(() -> categoryAdapter.setCounts(counts));
+        mainHandler.post(() -> {
+            categoryAdapter.setCounts(counts);
+            categoryAdapter.setLogos(logos);
+        });
     }
 
     private String currentCategory() {

@@ -3,10 +3,9 @@
     android:id="@+id/category_row"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="10dp"
-    android:layout_marginVertical="3dp"
-    android:paddingHorizontal="16dp"
-    android:paddingVertical="13dp"
+    android:paddingStart="26dp"
+    android:paddingEnd="20dp"
+    android:paddingVertical="16dp"
     android:orientation="horizontal"
     android:gravity="center_vertical"
     android:background="@drawable/tab_background"
@@ -15,9 +14,10 @@
 
     <ImageView
         android:id="@+id/category_icon"
-        android:layout_width="20dp"
-        android:layout_height="20dp"
+        android:layout_width="40dp"
+        android:layout_height="24dp"
         android:layout_marginEnd="14dp"
+        android:scaleType="centerInside"
         android:contentDescription="@null" />
 
     <TextView

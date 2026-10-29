@@ -9,6 +9,8 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +66,32 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.VH> {
 
     private static final String SELECTION_PAYLOAD = "selection";
     private static final String COUNT_PAYLOAD = "count";
+    private static final String LOGO_PAYLOAD = "logo";
     private Map<String, Integer> counts = new HashMap<>();
+    private Map<String, String> logos = new HashMap<>();
+
+    /** Logo URL per category (its first channel's logo), replacing the generic icon. */
+    public void setLogos(Map<String, String> logos) {
+        if (logos.equals(this.logos)) return;
+        this.logos = new HashMap<>(logos);
+        notifyItemRangeChanged(0, categories.size(), LOGO_PAYLOAD);
+    }
+
+    private void bindIcon(VH holder, String name) {
+        Integer fallback = ICONS.get(name);
+        String logo = logos.get(name);
+        if (logo != null) {
+            Glide.with(holder.icon.getContext())
+                    .load(logo)
+                    .transform(new TrimTransparentTransformation())
+                    .placeholder(fallback != null ? fallback : 0)
+                    .error(fallback != null ? fallback : 0)
+                    .into(holder.icon);
+        } else {
+            Glide.with(holder.icon.getContext()).clear(holder.icon);
+            if (fallback != null) holder.icon.setImageResource(fallback);
+        }
+    }
 
     /** Channel count shown at the right of each category row. */
     public void setCounts(Map<String, Integer> counts) {
@@ -110,6 +137,7 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.VH> {
                 holder.row.setSelected(!ACTION_SETTINGS.equals(name) && position == selectedPosition);
             }
             if (payloads.contains(COUNT_PAYLOAD)) bindCount(holder, name);
+            if (payloads.contains(LOGO_PAYLOAD)) bindIcon(holder, name);
             return;
         }
         onBindViewHolder(holder, position);
@@ -122,8 +150,7 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.VH> {
         holder.name.setText(name);
         bindCount(holder, name);
         holder.row.setSelected(!isAction && position == selectedPosition);
-        Integer iconRes = ICONS.get(name);
-        if (iconRes != null) holder.icon.setImageResource(iconRes);
+        bindIcon(holder, name);
 
         if (isAction) {
             // A plain action: fires only on a real OK/click, never previews on focus pass-through.
