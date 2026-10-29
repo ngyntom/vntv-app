@@ -32,7 +32,7 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.VH> {
         ICONS.put("SCTV", R.drawable.ic_cat_tv);
         ICONS.put("THVL", R.drawable.ic_cat_tv);
         ICONS.put(Categories.VTVCAB, R.drawable.ic_cat_tv);
-        ICONS.put("Tổng hợp", R.drawable.ic_cat_local);
+        ICONS.put("Tổng hợp", R.drawable.ic_cat_tv);
         ICONS.put(ACTION_SETTINGS, R.drawable.ic_settings);
     }
 

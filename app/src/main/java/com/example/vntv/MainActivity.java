@@ -80,6 +80,8 @@ public class MainActivity extends AppCompatActivity {
         adapter.setOnChannelLongClickListener(this::toggleFavorite);
         channelGrid.setAdapter(adapter);
 
+        findViewById(R.id.settings_button).setOnClickListener(v ->
+                startActivity(new Intent(this, SettingsActivity.class)));
         categories = loadCategories();
         // Default landing tab: Tổng hợp (Favorites is usually empty on first run).
         installCategoryAdapter(CAT_OTHER);
@@ -103,9 +105,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private List<String> loadCategories() {
-        List<String> list = new ArrayList<>(Categories.load(this));
-        list.add(CategoryAdapter.ACTION_SETTINGS);
-        return list;
+        return new ArrayList<>(Categories.load(this));
     }
 
     private void installCategoryAdapter(String selected) {
@@ -304,11 +304,11 @@ public class MainActivity extends AppCompatActivity {
         }
         counts.put(CAT_FAVORITES, favoriteChannels().size());
 
-        // Broadcaster groups show their first channel's logo (VTV1, HTV1, ...) as the icon.
+        // Each group shows its first channel's logo (VTV1, HTV1, ...) as the icon.
         Map<String, String> logos = new HashMap<>();
         for (Channel c : allChannels) {
             String cat = classify(c);
-            if (CAT_OTHER.equals(cat) || logos.containsKey(cat) || TextUtils.isEmpty(c.logoUrl)) continue;
+            if (logos.containsKey(cat) || TextUtils.isEmpty(c.logoUrl)) continue;
             logos.put(cat, c.logoUrl);
         }
 
@@ -585,7 +585,7 @@ public class MainActivity extends AppCompatActivity {
         View focused = getCurrentFocus();
         if (focused == null || !isInside(focused, channelGrid)) return false;
         View next = focused.focusSearch(View.FOCUS_LEFT);
-        return next != null && isInside(next, categoryTabs);
+        return next != null && (isInside(next, categoryTabs) || next.getId() == R.id.settings_button);
     }
 
     private static boolean isInside(View view, View ancestor) {
