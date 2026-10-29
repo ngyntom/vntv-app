@@ -18,30 +18,14 @@
         android:background="@drawable/overlay_panel_background"
         android:visibility="gone">
 
-        <LinearLayout
+        <TextView
+            style="@style/TextAppearance.VnTv.SectionLabel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
+            android:text="@string/overlay_header"
             android:paddingHorizontal="18dp"
-            android:paddingTop="16dp"
-            android:paddingBottom="10dp">
-
-            <TextView
-                style="@style/TextAppearance.VnTv.SectionLabel"
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="wrap_content"
-                android:text="@string/overlay_header" />
-
-            <TextView
-                android:id="@+id/overlay_time"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/text_primary"
-                android:fontFamily="sans-serif-medium"
-                android:textSize="22sp" />
-        </LinearLayout>
+            android:paddingTop="20dp"
+            android:paddingBottom="10dp" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/channel_list_overlay"
@@ -51,4 +35,18 @@
             android:paddingHorizontal="8dp"
             android:clipToPadding="false" />
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/playing_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="36dp"
+        android:textColor="#FFFFFFFF"
+        android:fontFamily="sans-serif-medium"
+        android:textSize="30sp"
+        android:shadowColor="#B3000000"
+        android:shadowDy="1"
+        android:shadowRadius="8" />
 </FrameLayout>

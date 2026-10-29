@@ -1,9 +1,16 @@
 package com.example.vntv;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.KeyEvent;
+import android.view.PixelCopy;
+import android.view.SurfaceView;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -25,7 +32,12 @@ public class PlayerActivity extends AppCompatActivity {
     private ExoPlayer player;
     private PlayerView playerView;
     private View overlayPanel;
-    private ClockBinder overlayClock;
+    private TextView clockView;
+    private ClockBinder clock;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Runnable sampleClockBackground = this::sampleClockBackground;
+    private Bitmap sampleBitmap;
+    private boolean clockOnLight = false;
     private RecyclerView channelListOverlay;
     private ChannelAdapter overlayAdapter;
     private List<Channel> channels;
@@ -39,7 +51,8 @@ public class PlayerActivity extends AppCompatActivity {
         playerView = findViewById(R.id.player_view);
         overlayPanel = findViewById(R.id.overlay_panel);
         channelListOverlay = findViewById(R.id.channel_list_overlay);
-        overlayClock = new ClockBinder(findViewById(R.id.overlay_time), null);
+        clockView = findViewById(R.id.playing_time);
+        clock = new ClockBinder(clockView, null);
 
         channels = ChannelHolder.current;
         currentIndex = getIntent().getIntExtra(EXTRA_INDEX, -1);
@@ -62,7 +75,8 @@ public class PlayerActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         PlaylistStore.setOnMenu(this, false);
-        if (overlayVisible) overlayClock.start();
+        clock.start();
+        handler.postDelayed(sampleClockBackground, 1500);
         if (player != null) return;
         player = new ExoPlayer.Builder(this).build();
         playerView.setPlayer(player);
@@ -126,11 +140,7 @@ public class PlayerActivity extends AppCompatActivity {
     private void setOverlayVisible(boolean visible) {
         overlayVisible = visible;
         overlayPanel.setVisibility(visible ? View.VISIBLE : View.GONE);
-        if (!visible) {
-            overlayClock.stop();
-            return;
-        }
-        overlayClock.start();
+        if (!visible) return;
         if (currentIndex >= 0 && currentIndex < channels.size()) {
             channelListOverlay.scrollToPosition(currentIndex);
             channelListOverlay.post(() -> {
@@ -196,10 +206,70 @@ public class PlayerActivity extends AppCompatActivity {
         finish();
     }
 
+    /** Samples the video under the clock and flips the clock to dark text over bright frames. */
+    private void sampleClockBackground() {
+        handler.postDelayed(sampleClockBackground, 3000);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N || player == null || !player.isPlaying()) return;
+        View surface = playerView.getVideoSurfaceView();
+        if (!(surface instanceof SurfaceView)) return;
+        SurfaceView sv = (SurfaceView) surface;
+        if (sv.getWidth() == 0 || sv.getHeight() == 0 || !sv.getHolder().getSurface().isValid()) return;
+
+        int[] svLoc = new int[2];
+        int[] clockLoc = new int[2];
+        sv.getLocationOnScreen(svLoc);
+        clockView.getLocationOnScreen(clockLoc);
+        float left = (clockLoc[0] - svLoc[0]) / (float) sv.getWidth();
+        float top = (clockLoc[1] - svLoc[1]) / (float) sv.getHeight();
+        float right = left + clockView.getWidth() / (float) sv.getWidth();
+        float bottom = top + clockView.getHeight() / (float) sv.getHeight();
+        if (right <= 0 || bottom <= 0 || left >= 1 || top >= 1) {
+            // Clock sits over the black letterbox bars, not the picture.
+            applyClockStyle(false);
+            return;
+        }
+        final float l = Math.max(0, left), t = Math.max(0, top);
+        final float r = Math.min(1, right), b = Math.min(1, bottom);
+
+        if (sampleBitmap == null) sampleBitmap = Bitmap.createBitmap(64, 36, Bitmap.Config.ARGB_8888);
+        PixelCopy.request(sv, sampleBitmap, result -> {
+            if (result != PixelCopy.SUCCESS) return;
+            double lum = averageLuminance(sampleBitmap, l, t, r, b);
+            // Separate on/off thresholds so a frame hovering near the edge doesn't flicker.
+            boolean onLight = clockOnLight ? lum > 0.5 : lum > 0.62;
+            applyClockStyle(onLight);
+        }, handler);
+    }
+
+    private static double averageLuminance(Bitmap bmp, float l, float t, float r, float b) {
+        int x0 = (int) (l * bmp.getWidth()), x1 = Math.max(x0 + 1, (int) Math.ceil(r * bmp.getWidth()));
+        int y0 = (int) (t * bmp.getHeight()), y1 = Math.max(y0 + 1, (int) Math.ceil(b * bmp.getHeight()));
+        x1 = Math.min(x1, bmp.getWidth());
+        y1 = Math.min(y1, bmp.getHeight());
+        double sum = 0;
+        int n = 0;
+        for (int y = y0; y < y1; y++) {
+            for (int x = x0; x < x1; x++) {
+                int c = bmp.getPixel(x, y);
+                sum += (0.2126 * ((c >> 16) & 0xff) + 0.7152 * ((c >> 8) & 0xff) + 0.0722 * (c & 0xff)) / 255.0;
+                n++;
+            }
+        }
+        return n == 0 ? 0 : sum / n;
+    }
+
+    private void applyClockStyle(boolean onLight) {
+        if (onLight == clockOnLight) return;
+        clockOnLight = onLight;
+        clockView.setTextColor(onLight ? 0xFF111418 : 0xFFFFFFFF);
+        clockView.setShadowLayer(8, 0, 1, onLight ? 0x99FFFFFF : 0xB3000000);
+    }
+
     @Override
     protected void onStop() {
         super.onStop();
-        overlayClock.stop();
+        clock.stop();
+        handler.removeCallbacks(sampleClockBackground);
         ChannelHolder.setListener(null);
         if (player != null) {
             player.release();
