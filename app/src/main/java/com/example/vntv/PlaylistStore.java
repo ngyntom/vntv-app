@@ -5,7 +5,9 @@ import android.content.SharedPreferences;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class PlaylistStore {
     private static final String PREFS = "vntv_prefs";
@@ -37,6 +39,22 @@ public class PlaylistStore {
                 .putString(KEY_FAVORITES, String.join("\n", favs))
                 .apply();
         return !wasFavorite;
+    }
+
+    private static final String KEY_DEAD_CHANNELS = "dead_channels";
+
+    /** streamUrls of channels the last health check found with no working link. */
+    public static Set<String> getDeadChannels(Context ctx) {
+        String stored = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_DEAD_CHANNELS, null);
+        Set<String> set = new HashSet<>();
+        if (stored != null && !stored.trim().isEmpty()) set.addAll(Arrays.asList(stored.split("\n")));
+        return set;
+    }
+
+    public static void setDeadChannels(Context ctx, Set<String> dead) {
+        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                .putString(KEY_DEAD_CHANNELS, String.join("\n", dead))
+                .apply();
     }
 
     private static final String KEY_AUTO_PLAY = "auto_play";

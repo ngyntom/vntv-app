@@ -13,8 +13,8 @@ https://vtvgolive-sctvdrm.vtvdigital.vn/manifest/vtv5/master.m3u8
 https://vtvgolive-sctvdrm.vtvdigital.vn/manifest/vtv5tnb/master.m3u8
 #EXTINF:-1 group-title="VTV",VTV5 Tây Nguyên (720p)
 https://vtvgolive-sctvdrm.vtvdigital.vn/manifest/vtv5tn/master.m3u8
-#EXTINF:-1 group-title="VTV",VTV6 (720p)
-https://vtvgolive-sctvdrm.vtvdigital.vn/manifest/vtv6/master.m3u8
+#EXTINF:-1 group-title="VTV",VTV6 (576p)
+http://125hvt.ddns.net:21585/vtv6/playlist.m3u8
 #EXTINF:-1 group-title="VTV",VTV7 (720p)
 https://vtvgolive-sctvdrm.vtvdigital.vn/manifest/vtv7/master.m3u8
 #EXTINF:-1 group-title="VTV",VTV8 (720p)

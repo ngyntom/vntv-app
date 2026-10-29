@@ -13,6 +13,7 @@
     <string name="overlay_header">DANH SÁCH KÊNH</string>
     <string name="overlay_count">%1$d kênh</string>
     <string name="no_channel_number">Không có kênh %1$d</string>
+    <string name="channel_offline">Kênh %1$d đang mất tín hiệu</string>
     <string name="channel_number_name">%1$d  %2$s</string>
 
     <!-- Settings screen -->

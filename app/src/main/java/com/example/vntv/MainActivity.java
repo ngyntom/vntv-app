@@ -27,8 +27,10 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -61,6 +63,8 @@ public class MainActivity extends AppCompatActivity {
     private boolean pendingHotkey = false;
     private static boolean instantResumeDone = false;
     private ClockBinder clock;
+    /** streamUrls of channels with no working link; hidden everywhere until a check finds them alive. */
+    private Set<String> deadChannels = new HashSet<>();
     private NumberEntry numberEntry;
 
     @Override
@@ -82,6 +86,7 @@ public class MainActivity extends AppCompatActivity {
 
         findViewById(R.id.settings_button).setOnClickListener(v ->
                 startActivity(new Intent(this, SettingsActivity.class)));
+        deadChannels = PlaylistStore.getDeadChannels(this);
         categories = loadCategories();
         // Default landing tab: Tổng hợp (Favorites is usually empty on first run).
         installCategoryAdapter(CAT_OTHER);
@@ -239,7 +244,7 @@ public class MainActivity extends AppCompatActivity {
     private void openChannel(Channel channel) {
         // The in-player overlay and Channel Up/Down cover every channel in channel-number order
         // (1..n), not just the group the grid happened to be filtered to.
-        List<Channel> playbackOrder = new ArrayList<>(allChannels);
+        List<Channel> playbackOrder = visibleChannels();
         int index = playbackOrder.indexOf(channel);
         ChannelHolder.current = playbackOrder;
         Intent intent = new Intent(this, PlayerActivity.class);
@@ -264,8 +269,9 @@ public class MainActivity extends AppCompatActivity {
      *  stream URLs ended up saved (favorites made before playlists were merged). */
     private List<Channel> favoriteChannels() {
         List<Channel> result = new ArrayList<>();
+        List<Channel> visible = visibleChannels();
         for (String url : PlaylistStore.getFavorites(this)) {
-            for (Channel c : allChannels) {
+            for (Channel c : visible) {
                 if (c.hasUrl(url)) {
                     if (!result.contains(c)) result.add(c);
                     break;
@@ -280,7 +286,7 @@ public class MainActivity extends AppCompatActivity {
         for (String cat : categories) {
             if (!CategoryAdapter.ACTION_SETTINGS.equals(cat)) counts.put(cat, 0);
         }
-        for (Channel c : allChannels) {
+        for (Channel c : visibleChannels()) {
             String cat = classify(c);
             counts.put(cat, counts.get(cat) + 1);
         }
@@ -333,7 +339,7 @@ public class MainActivity extends AppCompatActivity {
             for (String url : urls) fetches.add(fetchPool.submit(() -> fetchPlaylist(url)));
             // Bundled VTV list goes first so its 720p streams lead and the playlists' VTV links
             // become fallbacks; it's also what keeps VTV3/6/8 alive when both playlists' are dead.
-            List<Channel> fetched = new ArrayList<>(loadBuiltInChannels());
+            List<Channel> fetched = new ArrayList<>(loadAssetChannels("vtv.m3u"));
             boolean anyFetched = false;
             for (int i = 0; i < fetches.size(); i++) {
                 try {
@@ -344,6 +350,9 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
             fetchPool.shutdown();
+            // Last-resort extra links: merged in after the playlists, so they only ever add
+            // fallbacks and never move a channel (or its number).
+            fetched.addAll(loadAssetChannels("extra.m3u"));
             // Offline, the bundled VTV list alone would replace the last full list on disk and
             // in the grid; only take the result when at least one playlist actually came in.
             List<Channel> all = anyFetched || cached.isEmpty()
@@ -372,6 +381,7 @@ public class MainActivity extends AppCompatActivity {
      *  the launch it triggers) hasn't resolved yet. */
     private void applyLoadedChannels(List<Channel> channels, boolean isNetwork) {
         allChannels = channels;
+        if (isNetwork) startHealthCheck(channels);
         if (ChannelNumbers.set(channels)) mainHandler.post(() -> adapter.refreshNumbers());
         updateCategoryCounts();
         if (pendingHotkey && consumeHotkey()) return;
@@ -390,6 +400,41 @@ public class MainActivity extends AppCompatActivity {
             filterByCategory(currentCategory());
             focusCurrentCategory();
         }
+    }
+
+    /** Channels that still have a working link, in channel-number order. Numbers come from the
+     *  full list, so hiding a dead channel leaves a gap instead of renumbering the rest. */
+    private List<Channel> visibleChannels() {
+        List<Channel> result = new ArrayList<>(allChannels.size());
+        for (Channel c : allChannels) {
+            if (!deadChannels.contains(c.streamUrl)) result.add(c);
+        }
+        return result;
+    }
+
+    /** Probes every channel in the background and hides those with no working link left. */
+    private void startHealthCheck(List<Channel> channels) {
+        List<Channel> snapshot = new ArrayList<>(channels);
+        new Thread(() -> {
+            ChannelHealth.Result result = ChannelHealth.check(this, snapshot);
+            // Nothing answered at all: almost certainly offline, not every channel dying at
+            // once - keep the previous verdicts rather than hiding the whole list.
+            if (result.alive.isEmpty()) return;
+            for (Map.Entry<String, String> e : result.alive.entrySet()) {
+                String current = PlaylistStore.getWorkingUrl(this, e.getKey());
+                // Remember a fallback that works so playback starts on it directly.
+                if (!e.getValue().equals(current) && (current != null || !e.getValue().equals(e.getKey()))) {
+                    PlaylistStore.setWorkingUrl(this, e.getKey(), e.getValue());
+                }
+            }
+            PlaylistStore.setDeadChannels(this, result.dead);
+            mainHandler.post(() -> {
+                if (isFinishing() || isDestroyed() || result.dead.equals(deadChannels)) return;
+                deadChannels = result.dead;
+                updateCategoryCounts();
+                filterByCategory(currentCategory());
+            });
+        }, "channel-health").start();
     }
 
     /** Finds the channel at url, filters the grid to its category, and puts D-pad focus
@@ -449,7 +494,7 @@ public class MainActivity extends AppCompatActivity {
         if (lastUrl == null || !autoLaunched) return false;
         for (Channel c : all) {
             if (c.hasUrl(lastUrl)) {
-                ChannelHolder.update(new ArrayList<>(all));
+                ChannelHolder.update(visibleChannels());
                 return true;
             }
         }
@@ -497,7 +542,7 @@ public class MainActivity extends AppCompatActivity {
         if (CAT_FAVORITES.equals(category)) {
             filtered.addAll(favoriteChannels());
         } else {
-            for (Channel c : allChannels) {
+            for (Channel c : visibleChannels()) {
                 if (category.equals(classify(c))) filtered.add(c);
             }
         }
@@ -520,11 +565,11 @@ public class MainActivity extends AppCompatActivity {
         emptyView.setVisibility(showEmpty ? View.VISIBLE : View.GONE);
     }
 
-    private List<Channel> loadBuiltInChannels() {
-        try (InputStream in = getAssets().open("vtv.m3u")) {
-            return M3uParser.parse(in, "asset:vtv.m3u");
+    private List<Channel> loadAssetChannels(String name) {
+        try (InputStream in = getAssets().open(name)) {
+            return M3uParser.parse(in, "asset:" + name);
         } catch (Exception e) {
-            Log.w(TAG, "failed to read built-in channels", e);
+            Log.w(TAG, "failed to read bundled " + name, e);
             return new ArrayList<>();
         }
     }
@@ -598,6 +643,10 @@ public class MainActivity extends AppCompatActivity {
         Channel channel = ChannelNumbers.byNumber(number);
         if (channel == null) {
             numberEntry.show(getString(R.string.no_channel_number, number));
+            return;
+        }
+        if (deadChannels.contains(channel.streamUrl)) {
+            numberEntry.show(getString(R.string.channel_offline, number));
             return;
         }
         numberEntry.cancel();

@@ -212,6 +212,11 @@ public class PlayerActivity extends AppCompatActivity {
             return;
         }
         int index = channels.indexOf(channel);
+        // channels holds only live channels; one missing from a loaded list was found dead.
+        if (index < 0 && !channels.isEmpty()) {
+            numberEntry.show(getString(R.string.channel_offline, number));
+            return;
+        }
         if (index >= 0) currentIndex = index;
         play(channel);
         setOverlayVisible(false);
