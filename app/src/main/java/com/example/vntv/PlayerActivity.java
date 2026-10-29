@@ -22,6 +22,8 @@ import androidx.media3.ui.PlayerView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class PlayerActivity extends AppCompatActivity {
@@ -38,6 +40,10 @@ public class PlayerActivity extends AppCompatActivity {
     private final Runnable sampleClockBackground = this::sampleClockBackground;
     private Bitmap sampleBitmap;
     private boolean clockOnLight = false;
+    private String channelKey;
+    private List<String> urls = new ArrayList<>();
+    private int urlIndex;
+    private int triesLeft;
     private RecyclerView channelListOverlay;
     private ChannelAdapter overlayAdapter;
     private List<Channel> channels;
@@ -83,7 +89,15 @@ public class PlayerActivity extends AppCompatActivity {
         player.addListener(new Player.Listener() {
             @Override
             public void onPlayerError(PlaybackException error) {
+                if (tryNextUrl()) return;
                 Toast.makeText(PlayerActivity.this, R.string.playback_error, Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void onPlaybackStateChanged(int state) {
+                if (state == Player.STATE_READY && channelKey != null && !urls.isEmpty()) {
+                    PlaylistStore.setWorkingUrl(PlayerActivity.this, channelKey, urls.get(urlIndex));
+                }
             }
         });
 
@@ -96,9 +110,7 @@ public class PlayerActivity extends AppCompatActivity {
             String url = getIntent().getStringExtra(EXTRA_URL);
             String name = getIntent().getStringExtra(EXTRA_NAME);
             if (url != null) {
-                player.setMediaItem(MediaItem.fromUri(url));
-                player.prepare();
-                player.play();
+                startUrls(url, Collections.singletonList(url));
                 PlaylistStore.setLastPlayed(this, url, name);
             }
         }
@@ -114,7 +126,7 @@ public class PlayerActivity extends AppCompatActivity {
         overlayAdapter.setChannels(channels);
         String playingUrl = getIntent().getStringExtra(EXTRA_URL);
         for (int i = 0; i < channels.size(); i++) {
-            if (channels.get(i).streamUrl.equals(playingUrl)) {
+            if (channels.get(i).hasUrl(playingUrl)) {
                 currentIndex = i;
                 break;
             }
@@ -124,10 +136,33 @@ public class PlayerActivity extends AppCompatActivity {
 
     private void play(Channel channel) {
         if (player == null) return;
-        player.setMediaItem(MediaItem.fromUri(channel.streamUrl));
+        startUrls(channel.streamUrl, channel.allUrls());
+        PlaylistStore.setLastPlayed(this, channel.streamUrl, channel.name);
+    }
+
+    /** Plays the channel keyed by key, starting from whichever of its urls last worked. */
+    private void startUrls(String key, List<String> channelUrls) {
+        channelKey = key;
+        urls = new ArrayList<>(channelUrls);
+        String working = PlaylistStore.getWorkingUrl(this, key);
+        if (working != null && !urls.contains(working)) urls.add(0, working);
+        urlIndex = Math.max(0, urls.indexOf(working));
+        triesLeft = urls.size() - 1;
+        playCurrentUrl();
+    }
+
+    private boolean tryNextUrl() {
+        if (player == null || triesLeft <= 0) return false;
+        triesLeft--;
+        urlIndex = (urlIndex + 1) % urls.size();
+        playCurrentUrl();
+        return true;
+    }
+
+    private void playCurrentUrl() {
+        player.setMediaItem(MediaItem.fromUri(urls.get(urlIndex)));
         player.prepare();
         player.play();
-        PlaylistStore.setLastPlayed(this, channel.streamUrl, channel.name);
     }
 
     private void switchTo(Channel channel) {

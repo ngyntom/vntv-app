@@ -38,6 +38,7 @@ public class ChannelCache {
                 o.put("streamUrl", c.streamUrl);
                 o.put("groupTitle", c.groupTitle == null ? JSONObject.NULL : c.groupTitle);
                 o.put("sourceUrl", c.sourceUrl == null ? JSONObject.NULL : c.sourceUrl);
+                o.put("fallbackUrls", new JSONArray(c.fallbackUrls));
                 arr.put(o);
             }
             try (FileOutputStream out = ctx.openFileOutput(FILE_NAME, Context.MODE_PRIVATE)) {
@@ -60,13 +61,19 @@ public class ChannelCache {
             JSONArray arr = new JSONArray(sb.toString());
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject o = arr.getJSONObject(i);
+                List<String> fallbacks = new ArrayList<>();
+                JSONArray fb = o.optJSONArray("fallbackUrls");
+                if (fb != null) {
+                    for (int k = 0; k < fb.length(); k++) fallbacks.add(fb.getString(k));
+                }
                 result.add(new Channel(
                         o.getString("name"),
                         o.isNull("quality") ? null : o.getString("quality"),
                         o.isNull("logoUrl") ? null : o.getString("logoUrl"),
                         o.getString("streamUrl"),
                         o.isNull("groupTitle") ? null : o.getString("groupTitle"),
-                        o.isNull("sourceUrl") ? null : o.getString("sourceUrl")
+                        o.isNull("sourceUrl") ? null : o.getString("sourceUrl"),
+                        fallbacks
                 ));
             }
         } catch (JSONException | IOException e) {

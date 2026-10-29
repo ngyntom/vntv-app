@@ -12,6 +12,10 @@ public class PlaylistStore {
     private static final String KEY_URLS = "playlist_urls";
     private static final String KEY_FAVORITES = "favorite_urls";
     public static final String DEFAULT_VN_URL = "https://iptv-org.github.io/iptv/countries/vn.m3u";
+    public static final String DEFAULT_AIO_URL =
+            "https://raw.githubusercontent.com/khanh71/All-In-One-IPTV/main/http-iptv.m3u";
+    // Listed first: channels merged across playlists keep the first playlist's order and URL.
+    private static final List<String> DEFAULT_URLS = Arrays.asList(DEFAULT_AIO_URL, DEFAULT_VN_URL);
 
     public static List<String> getFavorites(Context ctx) {
         String stored = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_FAVORITES, null);
@@ -64,6 +68,19 @@ public class PlaylistStore {
         return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_LAST_PLAYED_NAME, null);
     }
 
+    private static final String WORKING_PREFIX = "working_url:";
+
+    /** The stream that last played for a channel (keyed by its streamUrl), tried first next time. */
+    public static String getWorkingUrl(Context ctx, String channelUrl) {
+        return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(WORKING_PREFIX + channelUrl, null);
+    }
+
+    public static void setWorkingUrl(Context ctx, String channelUrl, String workingUrl) {
+        SharedPreferences prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        if (workingUrl.equals(prefs.getString(WORKING_PREFIX + channelUrl, null))) return;
+        prefs.edit().putString(WORKING_PREFIX + channelUrl, workingUrl).apply();
+    }
+
     private static final String KEY_HOTKEY_URL = "hotkey_url";
     private static final String KEY_HOTKEY_NAME = "hotkey_name";
 
@@ -101,7 +118,7 @@ public class PlaylistStore {
         String stored = prefs.getString(KEY_URLS, null);
         List<String> urls = new ArrayList<>();
         if (stored == null || stored.trim().isEmpty()) {
-            urls.add(DEFAULT_VN_URL);
+            urls.addAll(DEFAULT_URLS);
         } else {
             urls.addAll(Arrays.asList(stored.split("\n")));
         }
@@ -119,7 +136,7 @@ public class PlaylistStore {
     public static void removeUrl(Context ctx, String url) {
         List<String> urls = getUrls(ctx);
         urls.remove(url);
-        if (urls.isEmpty()) urls.add(DEFAULT_VN_URL);
+        if (urls.isEmpty()) urls.addAll(DEFAULT_URLS);
         saveUrls(ctx, urls);
     }
 

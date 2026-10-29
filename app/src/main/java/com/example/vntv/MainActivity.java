@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "VnTv";
@@ -119,7 +120,7 @@ public class MainActivity extends AppCompatActivity {
         if (url == null) url = PlaylistStore.getLastPlayed(this);
         if (url == null) return false;
         for (Channel c : allChannels) {
-            if (url.equals(c.streamUrl)) {
+            if (c.hasUrl(url)) {
                 autoLaunched = true;
                 openChannel(c);
                 return true;
@@ -256,14 +257,22 @@ public class MainActivity extends AppCompatActivity {
                 mainHandler.post(() -> progressBar.setVisibility(View.VISIBLE));
             }
 
-            List<Channel> all = new ArrayList<>();
-            for (String url : PlaylistStore.getUrls(this)) {
+            // Fetched in parallel so adding playlists doesn't stack up their download times;
+            // results are still combined in the configured order, which decides merge priority.
+            List<String> urls = PlaylistStore.getUrls(this);
+            ExecutorService fetchPool = Executors.newFixedThreadPool(urls.size());
+            List<Future<List<Channel>>> fetches = new ArrayList<>();
+            for (String url : urls) fetches.add(fetchPool.submit(() -> fetchPlaylist(url)));
+            List<Channel> fetched = new ArrayList<>();
+            for (int i = 0; i < fetches.size(); i++) {
                 try {
-                    all.addAll(fetchPlaylist(url));
+                    fetched.addAll(fetches.get(i).get());
                 } catch (Exception e) {
-                    Log.w(TAG, "failed to load " + url, e);
+                    Log.w(TAG, "failed to load " + urls.get(i), e);
                 }
             }
+            fetchPool.shutdown();
+            List<Channel> all = ChannelMerger.merge(fetched);
             if (!all.isEmpty()) {
                 ChannelCache.save(this, all);
             }
@@ -313,7 +322,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean selectCategoryForUrl(String url) {
         if (url == null) return false;
         for (Channel c : allChannels) {
-            if (url.equals(c.streamUrl)) {
+            if (c.hasUrl(url)) {
                 String category = classify(c);
                 int catIndex = categoryAdapter.indexOf(category);
                 if (catIndex < 0) return false;
@@ -328,7 +337,7 @@ public class MainActivity extends AppCompatActivity {
     private void focusChannelInGrid(String url) {
         int index = -1;
         for (int i = 0; i < displayedChannels.size(); i++) {
-            if (url.equals(displayedChannels.get(i).streamUrl)) {
+            if (displayedChannels.get(i).hasUrl(url)) {
                 index = i;
                 break;
             }
@@ -362,7 +371,7 @@ public class MainActivity extends AppCompatActivity {
         String lastUrl = PlaylistStore.getLastPlayed(this);
         if (lastUrl == null || !autoLaunched) return false;
         for (Channel c : all) {
-            if (lastUrl.equals(c.streamUrl)) {
+            if (c.hasUrl(lastUrl)) {
                 ChannelHolder.update(buildPlaybackOrder(c));
                 return true;
             }
@@ -380,7 +389,7 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean launchIfPresent(List<Channel> all, String streamUrl) {
         for (Channel c : all) {
-            if (streamUrl.equals(c.streamUrl)) {
+            if (c.hasUrl(streamUrl)) {
                 autoLaunched = true;
                 displayedChannels = all;
                 openChannel(c);
@@ -391,7 +400,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private String classify(Channel c) {
-        String upper = c.name.toUpperCase();
+        String upper = ChannelMerger.stripDiacritics(c.name).toUpperCase();
         if (upper.contains("VTV")) return CAT_VTV;
         if (upper.contains("HTV")) return CAT_HTV;
         if (upper.contains("SCTV")) return CAT_SCTV;
@@ -410,7 +419,7 @@ public class MainActivity extends AppCompatActivity {
             List<String> favUrls = PlaylistStore.getFavorites(this);
             for (String url : favUrls) {
                 for (Channel c : allChannels) {
-                    if (url.equals(c.streamUrl)) {
+                    if (c.hasUrl(url)) {
                         filtered.add(c);
                         break;
                     }
