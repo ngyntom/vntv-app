@@ -29,12 +29,21 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.VH> {
 
     private List<Channel> channels;
     private final OnChannelClick listener;
+    private final int itemLayout;
+    private final float focusScale;
     private OnChannelLongClick longClickListener;
     private final Handler longPressHandler = new Handler(Looper.getMainLooper());
 
     public ChannelAdapter(List<Channel> channels, OnChannelClick listener) {
+        this(channels, listener, R.layout.item_channel, 1.06f);
+    }
+
+    /** itemLayout must use the channel_logo / channel_name / channel_quality ids. */
+    public ChannelAdapter(List<Channel> channels, OnChannelClick listener, int itemLayout, float focusScale) {
         this.channels = channels;
         this.listener = listener;
+        this.itemLayout = itemLayout;
+        this.focusScale = focusScale;
     }
 
     public void setOnChannelLongClickListener(OnChannelLongClick listener) {
@@ -56,7 +65,7 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.VH> {
     @NonNull
     @Override
     public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_channel, parent, false);
+        View v = LayoutInflater.from(parent.getContext()).inflate(itemLayout, parent, false);
         return new VH(v);
     }
 
@@ -65,11 +74,13 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.VH> {
         Channel c = channels.get(position);
         holder.name.setText(c.name);
         holder.itemView.setOnClickListener(v -> listener.onClick(c));
-        holder.itemView.setOnFocusChangeListener((v, hasFocus) -> {
-            float scale = hasFocus ? 1.06f : 1f;
-            v.animate().scaleX(scale).scaleY(scale).setDuration(120).start();
-            v.setElevation(hasFocus ? 10f : 0f);
-        });
+        if (focusScale != 1f) {
+            holder.itemView.setOnFocusChangeListener((v, hasFocus) -> {
+                float scale = hasFocus ? focusScale : 1f;
+                v.animate().scaleX(scale).scaleY(scale).setDuration(120).start();
+                v.setElevation(hasFocus ? 10f : 0f);
+            });
+        }
         // A TV remote's OK button never triggers the framework's touch-based long-click
         // detection, so time the key press by hand: schedule a "long press" after the system
         // threshold on key-down, cancel it (and fall back to a normal click) on key-up.

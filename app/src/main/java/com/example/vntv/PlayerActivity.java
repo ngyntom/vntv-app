@@ -64,7 +64,7 @@ public class PlayerActivity extends AppCompatActivity {
         currentIndex = getIntent().getIntExtra(EXTRA_INDEX, -1);
 
         channelListOverlay.setLayoutManager(new LinearLayoutManager(this));
-        overlayAdapter = new ChannelAdapter(channels, this::switchTo);
+        overlayAdapter = new ChannelAdapter(channels, this::switchTo, R.layout.item_channel_row, 1f);
         channelListOverlay.setAdapter(overlayAdapter);
 
         // Live channel streams: no seek bar, no next/prev transport buttons. Our own
