@@ -277,17 +277,24 @@ public class MainActivity extends AppCompatActivity {
             ExecutorService fetchPool = Executors.newFixedThreadPool(urls.size());
             List<Future<List<Channel>>> fetches = new ArrayList<>();
             for (String url : urls) fetches.add(fetchPool.submit(() -> fetchPlaylist(url)));
-            List<Channel> fetched = new ArrayList<>();
+            // Bundled VTV list goes first so its 720p streams lead and the playlists' VTV links
+            // become fallbacks; it's also what keeps VTV3/6/8 alive when both playlists' are dead.
+            List<Channel> fetched = new ArrayList<>(loadBuiltInChannels());
+            boolean anyFetched = false;
             for (int i = 0; i < fetches.size(); i++) {
                 try {
                     fetched.addAll(fetches.get(i).get());
+                    anyFetched = true;
                 } catch (Exception e) {
                     Log.w(TAG, "failed to load " + urls.get(i), e);
                 }
             }
             fetchPool.shutdown();
-            List<Channel> all = ChannelMerger.merge(fetched);
-            if (!all.isEmpty()) {
+            // Offline, the bundled VTV list alone would replace the last full list on disk and
+            // in the grid; only take the result when at least one playlist actually came in.
+            List<Channel> all = anyFetched || cached.isEmpty()
+                    ? ChannelMerger.merge(fetched) : new ArrayList<>();
+            if (anyFetched) {
                 ChannelCache.save(this, all);
             }
             mainHandler.post(() -> {
@@ -461,6 +468,15 @@ public class MainActivity extends AppCompatActivity {
             emptyView.setText(CAT_FAVORITES.equals(category) ? R.string.no_favorites : R.string.no_channels);
         }
         emptyView.setVisibility(showEmpty ? View.VISIBLE : View.GONE);
+    }
+
+    private List<Channel> loadBuiltInChannels() {
+        try (InputStream in = getAssets().open("vtv.m3u")) {
+            return M3uParser.parse(in, "asset:vtv.m3u");
+        } catch (Exception e) {
+            Log.w(TAG, "failed to read built-in channels", e);
+            return new ArrayList<>();
+        }
     }
 
     private List<Channel> fetchPlaylist(String urlStr) throws Exception {
