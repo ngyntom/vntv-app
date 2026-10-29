@@ -1,5 +1,6 @@
 package com.example.vntv;
 
+import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -62,6 +63,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        restoreHomeAlias();
         channelGrid = findViewById(R.id.channel_grid);
         categoryTabs = findViewById(R.id.category_tabs);
         emptyView = findViewById(R.id.empty_view);
@@ -134,6 +136,18 @@ public class MainActivity extends AppCompatActivity {
         // As the box's Home screen there's nothing behind this to go back to.
         if (isDefaultHome()) return;
         super.onBackPressed();
+    }
+
+    /** A reinstall resets the Home alias to its manifest default (off); turn it back on if the
+     *  restored prefs say this device uses VnTV as Home. */
+    private void restoreHomeAlias() {
+        if (!PlaylistStore.wantsHome(this)) return;
+        ComponentName alias = new ComponentName(this, getPackageName() + ".HomeAlias");
+        PackageManager pm = getPackageManager();
+        if (pm.getComponentEnabledSetting(alias) != PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
+            pm.setComponentEnabledSetting(alias, PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                    PackageManager.DONT_KILL_APP);
+        }
     }
 
     private boolean isDefaultHome() {

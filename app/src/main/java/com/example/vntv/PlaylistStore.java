@@ -68,6 +68,17 @@ public class PlaylistStore {
         return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_LAST_PLAYED_NAME, null);
     }
 
+    private static final String KEY_WANTS_HOME = "wants_home";
+
+    /** Saved alongside everything else so restoring prefs onto a reinstall brings Home back too. */
+    public static void setWantsHome(Context ctx, boolean wants) {
+        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_WANTS_HOME, wants).apply();
+    }
+
+    public static boolean wantsHome(Context ctx) {
+        return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_WANTS_HOME, false);
+    }
+
     private static final String WORKING_PREFIX = "working_url:";
 
     /** The stream that last played for a channel (keyed by its streamUrl), tried first next time. */

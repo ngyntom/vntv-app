@@ -78,6 +78,7 @@ public class SettingsActivity extends AppCompatActivity {
         refreshHome(homeValue, homeButton);
         homeButton.setOnClickListener(v -> {
             boolean enable = !isHomeAliasEnabled();
+            PlaylistStore.setWantsHome(this, enable);
             getPackageManager().setComponentEnabledSetting(homeAlias(),
                     enable ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED
                             : PackageManager.COMPONENT_ENABLED_STATE_DEFAULT,
