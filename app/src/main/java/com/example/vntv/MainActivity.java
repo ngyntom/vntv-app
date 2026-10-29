@@ -35,15 +35,15 @@ import java.util.concurrent.Future;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "VnTv";
-    private static final String CAT_FAVORITES = "Yêu thích";
-    private static final String CAT_VTV = "VTV";
-    private static final String CAT_HTV = "HTV";
-    private static final String CAT_SCTV = "SCTV";
-    private static final String CAT_THVL = "THVL";
-    private static final String CAT_OTHER = "Tổng hợp";
-    private static final List<String> CATEGORIES = Arrays.asList(
-            CAT_FAVORITES, CAT_OTHER, CAT_SCTV, CAT_THVL, CAT_HTV, CAT_VTV,
-            CategoryAdapter.ACTION_SETTINGS);
+    private static final String CAT_FAVORITES = Categories.FAVORITES;
+    private static final String CAT_VTV = Categories.VTV;
+    private static final String CAT_VTVCAB = Categories.VTVCAB;
+    private static final String CAT_HTV = Categories.HTV;
+    private static final String CAT_SCTV = Categories.SCTV;
+    private static final String CAT_THVL = Categories.THVL;
+    private static final String CAT_OTHER = Categories.OTHER;
+    /** Sidebar rows in the user's chosen order, Settings always last. */
+    private List<String> categories;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -80,12 +80,9 @@ public class MainActivity extends AppCompatActivity {
         adapter.setOnChannelLongClickListener(this::toggleFavorite);
         channelGrid.setAdapter(adapter);
 
-        // Default landing tab: first content category after Favorites (usually empty on first run).
-        categoryAdapter = new CategoryAdapter(CATEGORIES, 1, this::onCategorySelected);
-        // Focus navigation runs right after the key is dispatched, so a short window is enough
-        // to tell a user's D-pad move apart from focus the system hands out on its own.
-        categoryAdapter.setFocusSelectGate(() -> SystemClock.uptimeMillis() - lastNavKeyAt < 500);
-        categoryTabs.setAdapter(categoryAdapter);
+        categories = loadCategories();
+        // Default landing tab: Tổng hợp (Favorites is usually empty on first run).
+        installCategoryAdapter(CAT_OTHER);
 
         // Only on a genuine fresh launch - not when Android is recreating this Activity to
         // restore a back stack whose process got killed (e.g. this TV reclaiming RAM while
@@ -103,6 +100,30 @@ public class MainActivity extends AppCompatActivity {
         // instance here, and that should land on the grid rather than replay the channel.
         instantResumeDone = true;
         loadChannels();
+    }
+
+    private List<String> loadCategories() {
+        List<String> list = new ArrayList<>(Categories.load(this));
+        list.add(CategoryAdapter.ACTION_SETTINGS);
+        return list;
+    }
+
+    private void installCategoryAdapter(String selected) {
+        int index = Math.max(0, categories.indexOf(selected));
+        categoryAdapter = new CategoryAdapter(new ArrayList<>(categories), index, this::onCategorySelected);
+        // Focus navigation runs right after the key is dispatched, so a short window is enough
+        // to tell a user's D-pad move apart from focus the system hands out on its own.
+        categoryAdapter.setFocusSelectGate(() -> SystemClock.uptimeMillis() - lastNavKeyAt < 500);
+        categoryTabs.setAdapter(categoryAdapter);
+    }
+
+    /** Picks up a new order chosen in Settings, keeping the same category selected. */
+    private void applyCategoryOrderIfChanged() {
+        List<String> fresh = loadCategories();
+        if (fresh.equals(categories)) return;
+        String selected = currentCategory();
+        categories = fresh;
+        installCategoryAdapter(selected);
     }
 
     @Override
@@ -167,6 +188,7 @@ public class MainActivity extends AppCompatActivity {
      *  those; loadChannels() still runs right after to fill in the real list for Up/Down and
      *  the in-player overlay, picked up live by ChannelHolder once it's ready. */
     private void instantResumeIfPossible() {
+        if (!PlaylistStore.getAutoPlay(this)) return;
         // If the user had already backed out to this grid before leaving the app, that's
         // where they should land again - not back in the channel they'd stepped away from.
         if (PlaylistStore.wasOnMenu(this)) return;
@@ -193,6 +215,7 @@ public class MainActivity extends AppCompatActivity {
         if (allChannels.isEmpty()) {
             loadChannels();
         } else {
+            applyCategoryOrderIfChanged();
             updateCategoryCounts();
             syncSidebarToLastPlayed();
         }
@@ -231,7 +254,7 @@ public class MainActivity extends AppCompatActivity {
         String ownCategory = classify(playing);
         List<String> order = new ArrayList<>();
         order.add(ownCategory);
-        for (String cat : CATEGORIES) {
+        for (String cat : categories) {
             if (CAT_FAVORITES.equals(cat) || CategoryAdapter.ACTION_SETTINGS.equals(cat)) continue;
             if (!cat.equals(ownCategory)) order.add(cat);
         }
@@ -245,7 +268,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void toggleFavorite(Channel channel) {
-        boolean nowFavorite = PlaylistStore.toggleFavorite(this, channel.streamUrl);
+        boolean nowFavorite = PlaylistStore.toggleFavorite(this, channel);
         Toast.makeText(this, nowFavorite
                 ? getString(R.string.added_favorite, channel.name)
                 : getString(R.string.removed_favorite, channel.name), Toast.LENGTH_SHORT).show();
@@ -255,25 +278,31 @@ public class MainActivity extends AppCompatActivity {
         updateCategoryCounts();
     }
 
+    /** Favorited channels in the order they were added, each once even if several of its
+     *  stream URLs ended up saved (favorites made before playlists were merged). */
+    private List<Channel> favoriteChannels() {
+        List<Channel> result = new ArrayList<>();
+        for (String url : PlaylistStore.getFavorites(this)) {
+            for (Channel c : allChannels) {
+                if (c.hasUrl(url)) {
+                    if (!result.contains(c)) result.add(c);
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
     private void updateCategoryCounts() {
         Map<String, Integer> counts = new HashMap<>();
-        for (String cat : CATEGORIES) {
+        for (String cat : categories) {
             if (!CategoryAdapter.ACTION_SETTINGS.equals(cat)) counts.put(cat, 0);
         }
         for (Channel c : allChannels) {
             String cat = classify(c);
             counts.put(cat, counts.get(cat) + 1);
         }
-        int favorites = 0;
-        for (String url : PlaylistStore.getFavorites(this)) {
-            for (Channel c : allChannels) {
-                if (c.hasUrl(url)) {
-                    favorites++;
-                    break;
-                }
-            }
-        }
-        counts.put(CAT_FAVORITES, favorites);
+        counts.put(CAT_FAVORITES, favoriteChannels().size());
 
         // Broadcaster groups show their first channel's logo (VTV1, HTV1, ...) as the icon.
         Map<String, String> logos = new HashMap<>();
@@ -447,7 +476,7 @@ public class MainActivity extends AppCompatActivity {
 
     /** First run with no saved "last played" yet: falls back to the first favorite. */
     private boolean maybeAutoResume(List<Channel> all) {
-        if (autoLaunched) return false;
+        if (autoLaunched || !PlaylistStore.getAutoPlay(this)) return false;
         List<String> favorites = PlaylistStore.getFavorites(this);
         if (!favorites.isEmpty() && launchIfPresent(all, favorites.get(0))) return true;
         return false;
@@ -467,6 +496,8 @@ public class MainActivity extends AppCompatActivity {
 
     private String classify(Channel c) {
         String upper = ChannelMerger.stripDiacritics(c.name).toUpperCase();
+        // VTVcab's channels are branded "ON ..." (ON Cine, ON Kids, ...); checked before VTV.
+        if (upper.startsWith("ON ") || upper.contains("VTVCAB")) return CAT_VTVCAB;
         if (upper.contains("VTV")) return CAT_VTV;
         if (upper.contains("HTV")) return CAT_HTV;
         if (upper.contains("SCTV")) return CAT_SCTV;
@@ -482,15 +513,7 @@ public class MainActivity extends AppCompatActivity {
     private void filterByCategory(String category, Runnable afterApplied) {
         List<Channel> filtered = new ArrayList<>();
         if (CAT_FAVORITES.equals(category)) {
-            List<String> favUrls = PlaylistStore.getFavorites(this);
-            for (String url : favUrls) {
-                for (Channel c : allChannels) {
-                    if (c.hasUrl(url)) {
-                        filtered.add(c);
-                        break;
-                    }
-                }
-            }
+            filtered.addAll(favoriteChannels());
         } else {
             for (Channel c : allChannels) {
                 if (category.equals(classify(c))) filtered.add(c);

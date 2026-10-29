@@ -21,6 +21,11 @@
     <string name="section_watching">KHI XEM KÊNH</string>
     <string name="section_device">THIẾT BỊ</string>
 
+    <string name="autoplay_title">Tự phát kênh khi mở app</string>
+    <string name="autoplay_on">Bật: phát tiếp kênh đang xem dở</string>
+    <string name="autoplay_off">Tắt: mở danh sách kênh</string>
+    <string name="autoplay_desc">Khi bật, mở app hoặc bật thiết bị sẽ phát tiếp kênh đang xem dở.\n\nKhi tắt, luôn mở danh sách kênh để tự chọn.\n\nBấm OK để bật hoặc tắt.</string>
+
     <string name="hotkey_title">Nút Netflix mở kênh</string>
     <string name="hotkey_unset">Kênh đang xem gần nhất</string>
     <string name="hotkey_desc">Bấm nút Netflix trên remote ở bất kỳ đâu là mở ngay kênh này.\n\nBấm OK để chọn kênh khác.</string>
@@ -43,6 +48,11 @@
     <string name="url_hint">Dán link .m3u / .m3u8</string>
     <string name="removed">Đã xoá</string>
     <string name="added">Đã thêm nguồn</string>
+
+    <string name="sort_title">Sắp xếp danh mục</string>
+    <string name="sort_desc">Đổi thứ tự các danh mục ở menu bên trái.\n\nBấm OK vào một danh mục để nhấc lên, dùng phím lên/xuống để di chuyển, rồi bấm OK lần nữa để đặt xuống.</string>
+    <string name="sort_moving">▲▼ di chuyển · OK đặt xuống</string>
+    <string name="done">Xong</string>
 
     <string name="clock_title">Vị trí đồng hồ khi xem kênh</string>
     <string name="clock_desc">Đồng hồ hiện ở một góc màn hình trong lúc xem.\n\nBấm OK để chuyển sang góc khác nếu đồng hồ che logo kênh.</string>

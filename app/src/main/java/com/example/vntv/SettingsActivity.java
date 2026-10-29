@@ -6,11 +6,14 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -18,6 +21,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -56,11 +60,17 @@ public class SettingsActivity extends AppCompatActivity {
         View first = addRow(R.drawable.ic_source, R.string.sources_title, R.string.sources_desc,
                 () -> getString(R.string.sources_value, PlaylistStore.getUrls(this).size()),
                 this::showSources);
-        addRow(R.drawable.ic_cat_favorite, R.string.favorites_title, R.string.favorites_desc,
-                () -> getString(R.string.favorites_value, PlaylistStore.getFavorites(this).size()),
-                this::confirmClearFavorites);
+        addRow(R.drawable.ic_source, R.string.sort_title, R.string.sort_desc,
+                () -> TextUtils.join(", ", Categories.load(this)),
+                this::showSortDialog);
 
         addHeader(R.string.section_watching);
+        addRow(R.drawable.ic_cat_tv, R.string.autoplay_title, R.string.autoplay_desc,
+                () -> getString(PlaylistStore.getAutoPlay(this) ? R.string.autoplay_on : R.string.autoplay_off),
+                () -> {
+                    PlaylistStore.setAutoPlay(this, !PlaylistStore.getAutoPlay(this));
+                    refreshValues();
+                });
         addRow(R.drawable.ic_remote, R.string.hotkey_title, R.string.hotkey_desc,
                 () -> {
                     String name = PlaylistStore.getHotkeyName(this);
@@ -136,21 +146,64 @@ public class SettingsActivity extends AppCompatActivity {
                 .show();
     }
 
-    private void confirmClearFavorites() {
-        int count = PlaylistStore.getFavorites(this).size();
-        if (count == 0) {
-            Toast.makeText(this, R.string.favorites_empty, Toast.LENGTH_SHORT).show();
-            return;
+    /**
+     * Remote-friendly reordering: OK picks a category up (row turns solid blue), Up/Down moves
+     * it, OK puts it down. Rows stay put and only their labels swap, so focus never jumps while
+     * a key is being handled. Every move is saved immediately, so Back at any point keeps it.
+     */
+    private void showSortDialog() {
+        List<String> order = new ArrayList<>(Categories.load(this));
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        List<View> rowViews = new ArrayList<>();
+        int[] moving = {-1};
+
+        for (int i = 0; i < order.size(); i++) {
+            final int idx = i;
+            View row = LayoutInflater.from(this).inflate(R.layout.item_sort_row, box, false);
+            row.setOnClickListener(v -> {
+                int previous = moving[0];
+                moving[0] = previous == idx ? -1 : idx;
+                if (previous >= 0 && previous != idx) bindSortRow(rowViews.get(previous), previous, order, moving[0]);
+                bindSortRow(row, idx, order, moving[0]);
+            });
+            row.setOnKeyListener((v, keyCode, event) -> {
+                if (moving[0] != idx || event.getAction() != KeyEvent.ACTION_DOWN) return false;
+                int target;
+                if (keyCode == KeyEvent.KEYCODE_DPAD_UP) target = idx - 1;
+                else if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) target = idx + 1;
+                else return false;
+                if (target < 0 || target >= order.size()) return true;
+                Collections.swap(order, idx, target);
+                Categories.save(this, order);
+                moving[0] = target;
+                bindSortRow(row, idx, order, moving[0]);
+                View targetRow = rowViews.get(target);
+                bindSortRow(targetRow, target, order, moving[0]);
+                targetRow.requestFocus();
+                return true;
+            });
+            rowViews.add(row);
+            bindSortRow(row, idx, order, moving[0]);
+            box.addView(row);
         }
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.addView(box);
         new AlertDialog.Builder(this)
-                .setMessage(getString(R.string.favorites_confirm, count))
-                .setPositiveButton(R.string.yes, (d, w) -> {
-                    PlaylistStore.clearFavorites(this);
-                    refreshValues();
-                    Toast.makeText(this, R.string.favorites_cleared, Toast.LENGTH_SHORT).show();
-                })
-                .setNegativeButton(R.string.no, null)
+                .setTitle(R.string.sort_title)
+                .setView(scroll)
+                .setPositiveButton(R.string.done, null)
+                .setOnDismissListener(d -> refreshValues())
                 .show();
+        rowViews.get(0).requestFocus();
+    }
+
+    private void bindSortRow(View row, int index, List<String> order, int moving) {
+        ((TextView) row.findViewById(R.id.sort_position)).setText(String.valueOf(index + 1));
+        ((TextView) row.findViewById(R.id.sort_label)).setText(order.get(index));
+        ((TextView) row.findViewById(R.id.sort_hint)).setText(index == moving ? getString(R.string.sort_moving) : "");
+        row.setActivated(index == moving);
     }
 
     /** Lists the playlist URLs plus an "add" entry; picking a URL asks to remove it. */

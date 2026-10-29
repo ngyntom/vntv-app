@@ -26,24 +26,43 @@ public class PlaylistStore {
         return list;
     }
 
-    public static boolean isFavorite(Context ctx, String url) {
-        return getFavorites(ctx).contains(url);
-    }
-
-    public static boolean toggleFavorite(Context ctx, String url) {
+    /** Removes every stream of the channel from favorites if any is there, otherwise adds it.
+     *  Favorites saved before playlists were merged may hold a URL that is now only one of the
+     *  channel's fallbacks, so checking streamUrl alone would add a duplicate instead. */
+    public static boolean toggleFavorite(Context ctx, Channel channel) {
         List<String> favs = getFavorites(ctx);
-        boolean nowFavorite;
-        if (favs.contains(url)) {
-            favs.remove(url);
-            nowFavorite = false;
-        } else {
-            favs.add(url);
-            nowFavorite = true;
-        }
+        boolean wasFavorite = favs.removeAll(channel.allUrls());
+        if (!wasFavorite) favs.add(channel.streamUrl);
         ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
                 .putString(KEY_FAVORITES, String.join("\n", favs))
                 .apply();
-        return nowFavorite;
+        return !wasFavorite;
+    }
+
+    private static final String KEY_AUTO_PLAY = "auto_play";
+
+    /** Whether opening the app resumes a channel on its own; on by default. */
+    public static boolean getAutoPlay(Context ctx) {
+        return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_AUTO_PLAY, true);
+    }
+
+    public static void setAutoPlay(Context ctx, boolean enabled) {
+        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_AUTO_PLAY, enabled).apply();
+    }
+
+    private static final String KEY_CATEGORY_ORDER = "category_order";
+
+    public static List<String> getCategoryOrder(Context ctx) {
+        String stored = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_CATEGORY_ORDER, null);
+        List<String> list = new ArrayList<>();
+        if (stored != null && !stored.trim().isEmpty()) list.addAll(Arrays.asList(stored.split("\n")));
+        return list;
+    }
+
+    public static void setCategoryOrder(Context ctx, List<String> order) {
+        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                .putString(KEY_CATEGORY_ORDER, String.join("\n", order))
+                .apply();
     }
 
     public static void clearFavorites(Context ctx) {
