@@ -52,21 +52,21 @@ public class SettingsActivity extends AppCompatActivity {
         detailTitle = findViewById(R.id.detail_title);
         detailText = findViewById(R.id.detail_text);
 
-        addHeader(R.string.section_channels);
-        View first = addRow(R.drawable.ic_remote, R.string.hotkey_title, R.string.hotkey_desc,
+        addHeader(R.string.section_list);
+        View first = addRow(R.drawable.ic_source, R.string.sources_title, R.string.sources_desc,
+                () -> getString(R.string.sources_value, PlaylistStore.getUrls(this).size()),
+                this::showSources);
+        addRow(R.drawable.ic_cat_favorite, R.string.favorites_title, R.string.favorites_desc,
+                () -> getString(R.string.favorites_value, PlaylistStore.getFavorites(this).size()),
+                this::confirmClearFavorites);
+
+        addHeader(R.string.section_watching);
+        addRow(R.drawable.ic_remote, R.string.hotkey_title, R.string.hotkey_desc,
                 () -> {
                     String name = PlaylistStore.getHotkeyName(this);
                     return name != null ? name : getString(R.string.hotkey_unset);
                 },
                 this::chooseHotkeyChannel);
-        addRow(R.drawable.ic_cat_favorite, R.string.favorites_title, R.string.favorites_desc,
-                () -> getString(R.string.favorites_value, PlaylistStore.getFavorites(this).size()),
-                this::confirmClearFavorites);
-        addRow(R.drawable.ic_source, R.string.sources_title, R.string.sources_desc,
-                () -> getString(R.string.sources_value, PlaylistStore.getUrls(this).size()),
-                this::showSources);
-
-        addHeader(R.string.section_display);
         addRow(R.drawable.ic_clock, R.string.clock_title, R.string.clock_desc,
                 () -> getResources().getStringArray(R.array.clock_positions)[PlaylistStore.getClockPosition(this)],
                 () -> {

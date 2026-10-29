@@ -17,8 +17,8 @@
 
     <!-- Settings screen -->
     <string name="settings_screen_title">Cài đặt</string>
-    <string name="section_channels">KÊNH</string>
-    <string name="section_display">HIỂN THỊ</string>
+    <string name="section_list">DANH SÁCH KÊNH</string>
+    <string name="section_watching">KHI XEM KÊNH</string>
     <string name="section_device">THIẾT BỊ</string>
 
     <string name="hotkey_title">Nút Netflix mở kênh</string>
