@@ -19,6 +19,7 @@
     <string name="brand_prefix">VN</string>
     <string name="brand_suffix">TV</string>
     <string name="overlay_header">DANH SÁCH KÊNH</string>
+    <string name="overlay_count">%1$d kênh</string>
     <string name="favorites_count">Số kênh yêu thích: %1$d</string>
     <string name="clear_favorites">Xoá tất cả yêu thích</string>
     <string name="favorites_cleared">Đã xoá danh sách yêu thích</string>
@@ -32,4 +33,12 @@
     <string name="home_off">VnTV chưa làm màn hình chính</string>
     <string name="home_enable">Đặt làm màn hình chính</string>
     <string name="home_disable">Bỏ làm màn hình chính</string>
+    <string name="clock_value">Đồng hồ khi xem kênh: %1$s</string>
+    <string name="clock_change">Đổi vị trí</string>
+    <string-array name="clock_positions">
+        <item>góc trên trái</item>
+        <item>góc trên phải</item>
+        <item>góc dưới trái</item>
+        <item>góc dưới phải</item>
+    </string-array>
 </resources>

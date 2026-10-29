@@ -25,7 +25,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -187,6 +189,7 @@ public class MainActivity extends AppCompatActivity {
         if (allChannels.isEmpty()) {
             loadChannels();
         } else {
+            updateCategoryCounts();
             syncSidebarToLastPlayed();
         }
     }
@@ -245,6 +248,30 @@ public class MainActivity extends AppCompatActivity {
         if (CAT_FAVORITES.equals(currentCategory())) {
             filterByCategory(CAT_FAVORITES);
         }
+        updateCategoryCounts();
+    }
+
+    private void updateCategoryCounts() {
+        Map<String, Integer> counts = new HashMap<>();
+        for (String cat : CATEGORIES) {
+            if (!CategoryAdapter.ACTION_SETTINGS.equals(cat)) counts.put(cat, 0);
+        }
+        for (Channel c : allChannels) {
+            String cat = classify(c);
+            counts.put(cat, counts.get(cat) + 1);
+        }
+        int favorites = 0;
+        for (String url : PlaylistStore.getFavorites(this)) {
+            for (Channel c : allChannels) {
+                if (c.hasUrl(url)) {
+                    favorites++;
+                    break;
+                }
+            }
+        }
+        counts.put(CAT_FAVORITES, favorites);
+        // Posted for the same reason as filterByCategory: this can run mid-layout.
+        mainHandler.post(() -> categoryAdapter.setCounts(counts));
     }
 
     private String currentCategory() {
@@ -318,6 +345,7 @@ public class MainActivity extends AppCompatActivity {
      *  the launch it triggers) hasn't resolved yet. */
     private void applyLoadedChannels(List<Channel> channels, boolean isNetwork) {
         allChannels = channels;
+        updateCategoryCounts();
         if (pendingHotkey && consumeHotkey()) return;
         boolean launched = finishInstantResume(channels) || maybeAutoResume(channels);
         if (launched) return;
@@ -503,8 +531,39 @@ public class MainActivity extends AppCompatActivity {
                     lastNavKeyAt = SystemClock.uptimeMillis();
                     break;
             }
+            if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_LEFT && leavingGridToSidebar()) {
+                // Android would pick the sidebar row nearest the tile's height, and that row's
+                // focus-preview would switch category; go back to the selected one instead.
+                focusSelectedCategoryRow();
+                return true;
+            }
         }
         return super.dispatchKeyEvent(event);
+    }
+
+    private boolean leavingGridToSidebar() {
+        View focused = getCurrentFocus();
+        if (focused == null || !isInside(focused, channelGrid)) return false;
+        View next = focused.focusSearch(View.FOCUS_LEFT);
+        return next != null && isInside(next, categoryTabs);
+    }
+
+    private static boolean isInside(View view, View ancestor) {
+        for (View v = view; v != null; v = v.getParent() instanceof View ? (View) v.getParent() : null) {
+            if (v == ancestor) return true;
+        }
+        return false;
+    }
+
+    private void focusSelectedCategoryRow() {
+        int index = categoryAdapter.indexOf(currentCategory());
+        if (index < 0) return;
+        RecyclerView.ViewHolder vh = categoryTabs.findViewHolderForAdapterPosition(index);
+        if (vh != null) {
+            vh.itemView.requestFocus();
+        } else {
+            focusCategoryRow(index);
+        }
     }
 
     @Override

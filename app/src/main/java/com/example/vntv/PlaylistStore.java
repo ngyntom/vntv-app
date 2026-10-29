@@ -68,6 +68,21 @@ public class PlaylistStore {
         return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_LAST_PLAYED_NAME, null);
     }
 
+    public static final int CLOCK_TOP_LEFT = 0;
+    public static final int CLOCK_TOP_RIGHT = 1;
+    public static final int CLOCK_BOTTOM_LEFT = 2;
+    public static final int CLOCK_BOTTOM_RIGHT = 3;
+    private static final String KEY_CLOCK_POSITION = "clock_position";
+
+    /** Corner of the in-playback clock; bottom-right by default, where channel logos rarely sit. */
+    public static int getClockPosition(Context ctx) {
+        return ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt(KEY_CLOCK_POSITION, CLOCK_BOTTOM_RIGHT);
+    }
+
+    public static void setClockPosition(Context ctx, int position) {
+        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putInt(KEY_CLOCK_POSITION, position).apply();
+    }
+
     private static final String KEY_WANTS_HOME = "wants_home";
 
     /** Saved alongside everything else so restoring prefs onto a reinstall brings Home back too. */

@@ -63,6 +63,21 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.VH> {
     }
 
     private static final String SELECTION_PAYLOAD = "selection";
+    private static final String COUNT_PAYLOAD = "count";
+    private Map<String, Integer> counts = new HashMap<>();
+
+    /** Channel count shown at the right of each category row. */
+    public void setCounts(Map<String, Integer> counts) {
+        if (counts.equals(this.counts)) return;
+        this.counts = new HashMap<>(counts);
+        notifyItemRangeChanged(0, categories.size(), COUNT_PAYLOAD);
+    }
+
+    private void bindCount(VH holder, String name) {
+        Integer count = ACTION_SETTINGS.equals(name) ? null : counts.get(name);
+        holder.count.setVisibility(count == null ? View.GONE : View.VISIBLE);
+        if (count != null) holder.count.setText(String.valueOf(count));
+    }
 
     /** Updates which row is highlighted as "selected" without firing the click listener
      *  (the caller already knows what to show, e.g. syncing to the channel that was playing). */
@@ -88,10 +103,13 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.VH> {
     @Override
     public void onBindViewHolder(@NonNull VH holder, int position, @NonNull List<Object> payloads) {
         if (!payloads.isEmpty()) {
-            // Selection-only update: just flip the highlight, keep the click/focus
-            // listeners already attached so a rebind can't disturb live D-pad focus.
+            // Partial update (highlight and/or count only): keep the click/focus listeners
+            // already attached so a rebind can't disturb live D-pad focus.
             String name = categories.get(position);
-            holder.row.setSelected(!ACTION_SETTINGS.equals(name) && position == selectedPosition);
+            if (payloads.contains(SELECTION_PAYLOAD)) {
+                holder.row.setSelected(!ACTION_SETTINGS.equals(name) && position == selectedPosition);
+            }
+            if (payloads.contains(COUNT_PAYLOAD)) bindCount(holder, name);
             return;
         }
         onBindViewHolder(holder, position);
@@ -102,6 +120,7 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.VH> {
         String name = categories.get(position);
         boolean isAction = ACTION_SETTINGS.equals(name);
         holder.name.setText(name);
+        bindCount(holder, name);
         holder.row.setSelected(!isAction && position == selectedPosition);
         Integer iconRes = ICONS.get(name);
         if (iconRes != null) holder.icon.setImageResource(iconRes);
@@ -139,11 +158,13 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.VH> {
     static class VH extends RecyclerView.ViewHolder {
         View row;
         TextView name;
+        TextView count;
         ImageView icon;
         VH(View itemView) {
             super(itemView);
             row = itemView.findViewById(R.id.category_row);
             name = itemView.findViewById(R.id.category_name);
+            count = itemView.findViewById(R.id.category_count);
             icon = itemView.findViewById(R.id.category_icon);
         }
     }

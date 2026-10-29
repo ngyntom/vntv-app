@@ -6,10 +6,12 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.PixelCopy;
 import android.view.SurfaceView;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -35,6 +37,7 @@ public class PlayerActivity extends AppCompatActivity {
     private PlayerView playerView;
     private View overlayPanel;
     private TextView clockView;
+    private TextView overlayCount;
     private ClockBinder clock;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable sampleClockBackground = this::sampleClockBackground;
@@ -57,6 +60,7 @@ public class PlayerActivity extends AppCompatActivity {
         playerView = findViewById(R.id.player_view);
         overlayPanel = findViewById(R.id.overlay_panel);
         channelListOverlay = findViewById(R.id.channel_list_overlay);
+        overlayCount = findViewById(R.id.overlay_count);
         clockView = findViewById(R.id.playing_time);
         clock = new ClockBinder(clockView, null);
 
@@ -81,6 +85,7 @@ public class PlayerActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         PlaylistStore.setOnMenu(this, false);
+        placeClock(PlaylistStore.getClockPosition(this));
         clock.start();
         handler.postDelayed(sampleClockBackground, 1500);
         if (player != null) return;
@@ -176,6 +181,7 @@ public class PlayerActivity extends AppCompatActivity {
         overlayVisible = visible;
         overlayPanel.setVisibility(visible ? View.VISIBLE : View.GONE);
         if (!visible) return;
+        overlayCount.setText(getString(R.string.overlay_count, channels.size()));
         if (currentIndex >= 0 && currentIndex < channels.size()) {
             channelListOverlay.scrollToPosition(currentIndex);
             channelListOverlay.post(() -> {
@@ -239,6 +245,20 @@ public class PlayerActivity extends AppCompatActivity {
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         startActivity(intent);
         finish();
+    }
+
+    private void placeClock(int position) {
+        boolean top = position == PlaylistStore.CLOCK_TOP_LEFT || position == PlaylistStore.CLOCK_TOP_RIGHT;
+        boolean left = position == PlaylistStore.CLOCK_TOP_LEFT || position == PlaylistStore.CLOCK_BOTTOM_LEFT;
+        float dp = getResources().getDisplayMetrics().density;
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) clockView.getLayoutParams();
+        lp.gravity = (top ? Gravity.TOP : Gravity.BOTTOM) | (left ? Gravity.START : Gravity.END);
+        int vertical = Math.round((top ? 24 : 28) * dp);
+        int horizontal = Math.round(36 * dp);
+        lp.setMargins(left ? horizontal : 0, top ? vertical : 0, left ? 0 : horizontal, top ? 0 : vertical);
+        lp.setMarginStart(left ? horizontal : 0);
+        lp.setMarginEnd(left ? 0 : horizontal);
+        clockView.setLayoutParams(lp);
     }
 
     /** Samples the video under the clock and flips the clock to dark text over bright frames. */

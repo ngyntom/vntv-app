@@ -73,6 +73,13 @@ public class SettingsActivity extends AppCompatActivity {
         findViewById(R.id.system_settings_button).setOnClickListener(v ->
                 startActivity(new Intent(Settings.ACTION_SETTINGS)));
 
+        TextView clockValue = findViewById(R.id.clock_value);
+        refreshClock(clockValue);
+        findViewById(R.id.clock_button).setOnClickListener(v -> {
+            PlaylistStore.setClockPosition(this, nextClockPosition(PlaylistStore.getClockPosition(this)));
+            refreshClock(clockValue);
+        });
+
         TextView homeValue = findViewById(R.id.home_value);
         Button homeButton = findViewById(R.id.home_button);
         refreshHome(homeValue, homeButton);
@@ -89,6 +96,21 @@ public class SettingsActivity extends AppCompatActivity {
                 startActivity(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME));
             }
         });
+    }
+
+    /** Walks the corners clockwise starting from the default: bottom-right, bottom-left, top-left, top-right. */
+    private static int nextClockPosition(int current) {
+        switch (current) {
+            case PlaylistStore.CLOCK_BOTTOM_RIGHT: return PlaylistStore.CLOCK_BOTTOM_LEFT;
+            case PlaylistStore.CLOCK_BOTTOM_LEFT: return PlaylistStore.CLOCK_TOP_LEFT;
+            case PlaylistStore.CLOCK_TOP_LEFT: return PlaylistStore.CLOCK_TOP_RIGHT;
+            default: return PlaylistStore.CLOCK_BOTTOM_RIGHT;
+        }
+    }
+
+    private void refreshClock(TextView view) {
+        String[] names = getResources().getStringArray(R.array.clock_positions);
+        view.setText(getString(R.string.clock_value, names[PlaylistStore.getClockPosition(this)]));
     }
 
     private ComponentName homeAlias() {
