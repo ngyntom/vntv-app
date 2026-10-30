@@ -429,7 +429,8 @@ public class MainActivity extends AppCompatActivity {
             String cat = classify(c);
             counts.put(cat, counts.get(cat) + 1);
         }
-        counts.put(CAT_FAVORITES, favoriteChannels().size());
+        List<Channel> favorites = favoriteChannels();
+        counts.put(CAT_FAVORITES, favorites.size());
 
         // Each group shows its first channel's logo (VTV1, HTV1, ...) as the icon.
         Map<String, String> logos = new HashMap<>();
@@ -437,6 +438,11 @@ public class MainActivity extends AppCompatActivity {
             String cat = classify(c);
             if (logos.containsKey(cat) || TextUtils.isEmpty(c.logoUrl)) continue;
             logos.put(cat, c.logoUrl);
+        }
+        // The favorites row does the same with its first favorite channel, so its icon matches
+        // every other row; the star fallback only shows while nothing is favorited yet.
+        if (!favorites.isEmpty() && !TextUtils.isEmpty(favorites.get(0).logoUrl)) {
+            logos.put(CAT_FAVORITES, favorites.get(0).logoUrl);
         }
 
         // Posted for the same reason as filterByCategory: this can run mid-layout.
