@@ -12,6 +12,7 @@ import android.view.KeyEvent;
 import android.view.PixelCopy;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -88,6 +89,10 @@ public class PlayerActivity extends AppCompatActivity {
         // Live channel streams: no seek bar, no next/prev transport buttons. Our own
         // overlay (OK button) and Channel Up/Down handle switching instead.
         playerView.setUseController(false);
+        // A TV must not blank mid-broadcast just because the remote has been idle: this
+        // activity is the "watching" screen, so hold the screen on for as long as it shows.
+        // Without it the system's screen-off timeout applies even while video is playing.
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
     // ExoPlayer's own guidance for API 24+: create/bind the player in onStart and tear it down
@@ -387,6 +392,9 @@ public class PlayerActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
+        // The player window is leaving the screen; let normal timeouts apply again (e.g. when
+        // the user walks away from the channel grid, the TV should still be able to sleep).
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         clock.stop();
         numberEntry.cancel();
         handler.removeCallbacks(sampleClockBackground);
