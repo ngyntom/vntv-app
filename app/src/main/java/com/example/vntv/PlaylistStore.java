@@ -28,6 +28,13 @@ public class PlaylistStore {
         return list;
     }
 
+    /** Replaces the favorites with exactly these URLs, in this order. */
+    public static void setFavorites(Context ctx, List<String> urls) {
+        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                .putString(KEY_FAVORITES, String.join("\n", urls))
+                .apply();
+    }
+
     /** Removes every stream of the channel from favorites if any is there, otherwise adds it.
      *  Favorites saved before playlists were merged may hold a URL that is now only one of the
      *  channel's fallbacks, so checking streamUrl alone would add a duplicate instead. */

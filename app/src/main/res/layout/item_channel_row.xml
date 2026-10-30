@@ -39,6 +39,15 @@
         android:maxLines="1"
         android:ellipsize="end" />
 
+    <ImageView
+        android:id="@+id/channel_favorite"
+        android:layout_width="18dp"
+        android:layout_height="18dp"
+        android:layout_marginStart="8dp"
+        android:src="@drawable/ic_cat_favorite"
+        android:visibility="gone"
+        android:contentDescription="@null" />
+
     <TextView
         android:id="@+id/channel_quality"
         android:layout_width="wrap_content"

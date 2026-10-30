@@ -28,6 +28,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 
 public class PlayerActivity extends AppCompatActivity {
@@ -74,6 +75,14 @@ public class PlayerActivity extends AppCompatActivity {
 
         channelListOverlay.setLayoutManager(new LinearLayoutManager(this));
         overlayAdapter = new ChannelAdapter(channels, this::switchTo, R.layout.item_channel_row, 1f);
+        overlayAdapter.setFavoriteUrls(new HashSet<>(PlaylistStore.getFavorites(this)));
+        // Holding OK on a row adds or removes it from favorites; its star updates in place.
+        overlayAdapter.setOnChannelLongClickListener(channel -> {
+            boolean nowFavorite = PlaylistStore.toggleFavorite(this, channel);
+            overlayAdapter.setFavoriteUrls(new HashSet<>(PlaylistStore.getFavorites(this)));
+            Toast.makeText(this, getString(nowFavorite ? R.string.added_favorite : R.string.removed_favorite,
+                    channel.name), Toast.LENGTH_SHORT).show();
+        });
         channelListOverlay.setAdapter(overlayAdapter);
 
         // Live channel streams: no seek bar, no next/prev transport buttons. Our own
@@ -187,6 +196,7 @@ public class PlayerActivity extends AppCompatActivity {
         overlayPanel.setVisibility(visible ? View.VISIBLE : View.GONE);
         if (!visible) return;
         overlayCount.setText(getString(R.string.overlay_count, channels.size()));
+        overlayAdapter.setFavoriteUrls(new HashSet<>(PlaylistStore.getFavorites(this)));
         if (currentIndex >= 0 && currentIndex < channels.size()) {
             scrollOverlayTo(currentIndex);
         } else {

@@ -66,6 +66,10 @@ public class MainActivity extends AppCompatActivity {
     /** streamUrls of channels with no working link; hidden everywhere until a check finds them alive. */
     private Set<String> deadChannels = new HashSet<>();
     private String shownCategory;
+    /** Position of the favorite being reordered in the grid, or -1. */
+    private int movingIndex = -1;
+    /** Drops the key-up of the OK press that put a moved favorite down, so it doesn't open it. */
+    private boolean swallowCenterUp = false;
     private NumberEntry numberEntry;
 
     @Override
@@ -82,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
         channelGrid.setLayoutManager(new GridLayoutManager(this, 4));
         categoryTabs.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         adapter = new ChannelAdapter(new ArrayList<>(), this::openChannel);
-        adapter.setOnChannelLongClickListener(this::toggleFavorite);
+        adapter.setOnChannelLongClickListener(this::onChannelLongPress);
         channelGrid.setAdapter(adapter);
 
         findViewById(R.id.settings_button).setOnClickListener(v ->
@@ -212,6 +216,7 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
         clock.stop();
         numberEntry.cancel();
+        finishMovingFavorite();
     }
 
     @Override
@@ -253,6 +258,77 @@ public class MainActivity extends AppCompatActivity {
         intent.putExtra(PlayerActivity.EXTRA_NAME, channel.name);
         intent.putExtra(PlayerActivity.EXTRA_INDEX, index);
         startActivity(intent);
+    }
+
+    /** Hold OK: in Favorites it picks the channel up for reordering, elsewhere it toggles favorite. */
+    private void onChannelLongPress(Channel channel) {
+        if (CAT_FAVORITES.equals(currentCategory())) {
+            startMovingFavorite(channel);
+        } else {
+            toggleFavorite(channel);
+        }
+    }
+
+    private void startMovingFavorite(Channel channel) {
+        int index = adapter.getChannels().indexOf(channel);
+        if (index < 0) return;
+        movingIndex = index;
+        adapter.setMovingPosition(index);
+        Toast.makeText(this, R.string.favorites_move_hint, Toast.LENGTH_LONG).show();
+    }
+
+    /**
+     * Keys while a favorite is picked up: arrows move it one tile (left/right) or one row
+     * (up/down), OK or Back puts it down and saves. Every key of the gesture is consumed so
+     * nothing else (category switching, opening the channel) reacts to it.
+     */
+    private boolean handleMoveKey(KeyEvent event) {
+        int code = event.getKeyCode();
+        boolean center = code == KeyEvent.KEYCODE_DPAD_CENTER || code == KeyEvent.KEYCODE_ENTER;
+        boolean arrow = code == KeyEvent.KEYCODE_DPAD_LEFT || code == KeyEvent.KEYCODE_DPAD_RIGHT
+                || code == KeyEvent.KEYCODE_DPAD_UP || code == KeyEvent.KEYCODE_DPAD_DOWN;
+        if (event.getAction() == KeyEvent.ACTION_UP) return center || arrow || code == KeyEvent.KEYCODE_BACK;
+        if (code == KeyEvent.KEYCODE_BACK || (center && event.getRepeatCount() == 0)) {
+            // The OK still held from the long press only repeats; a fresh press puts it down.
+            finishMovingFavorite();
+            if (center) swallowCenterUp = true;
+            return true;
+        }
+        if (center) return true;
+        if (!arrow) return false;
+        int columns = 4;
+        int delta = code == KeyEvent.KEYCODE_DPAD_LEFT ? -1
+                : code == KeyEvent.KEYCODE_DPAD_RIGHT ? 1
+                : code == KeyEvent.KEYCODE_DPAD_UP ? -columns : columns;
+        int to = Math.max(0, Math.min(adapter.getChannels().size() - 1, movingIndex + delta));
+        if (to != movingIndex) {
+            adapter.moveItem(movingIndex, to);
+            movingIndex = to;
+            channelGrid.scrollToPosition(to);
+        }
+        return true;
+    }
+
+    /** Saves the new order; hidden (dead) favorites keep their place at the end. */
+    private void finishMovingFavorite() {
+        if (movingIndex < 0) return;
+        movingIndex = -1;
+        adapter.setMovingPosition(RecyclerView.NO_POSITION);
+        List<Channel> ordered = adapter.getChannels();
+        List<String> urls = new ArrayList<>();
+        for (Channel c : ordered) urls.add(c.streamUrl);
+        for (String saved : PlaylistStore.getFavorites(this)) {
+            boolean shown = false;
+            for (Channel c : ordered) {
+                if (c.hasUrl(saved)) {
+                    shown = true;
+                    break;
+                }
+            }
+            if (!shown && !urls.contains(saved)) urls.add(saved);
+        }
+        PlaylistStore.setFavorites(this, urls);
+        Toast.makeText(this, R.string.favorites_order_saved, Toast.LENGTH_SHORT).show();
     }
 
     private void toggleFavorite(Channel channel) {
@@ -302,9 +378,11 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // Posted for the same reason as filterByCategory: this can run mid-layout.
+        Set<String> favoriteUrls = new HashSet<>(PlaylistStore.getFavorites(this));
         mainHandler.post(() -> {
             categoryAdapter.setCounts(counts);
             categoryAdapter.setLogos(logos);
+            adapter.setFavoriteUrls(favoriteUrls);
         });
     }
 
@@ -436,7 +514,8 @@ public class MainActivity extends AppCompatActivity {
                 if (isFinishing() || isDestroyed() || result.dead.equals(deadChannels)) return;
                 deadChannels = result.dead;
                 updateCategoryCounts();
-                filterByCategory(currentCategory());
+                // Don't rebuild the grid under a favorite that's being moved.
+                if (movingIndex < 0) filterByCategory(currentCategory());
             });
         }, "channel-health").start();
     }
@@ -600,6 +679,12 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+        if (movingIndex >= 0 && handleMoveKey(event)) return true;
+        if (swallowCenterUp && event.getAction() == KeyEvent.ACTION_UP
+                && (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_CENTER || event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+            swallowCenterUp = false;
+            return true;
+        }
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
             switch (event.getKeyCode()) {
                 case KeyEvent.KEYCODE_DPAD_UP:

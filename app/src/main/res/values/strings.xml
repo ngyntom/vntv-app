@@ -7,6 +7,8 @@
     <string name="playback_error">Không phát được kênh này</string>
     <string name="added_favorite">Đã thêm vào yêu thích: %1$s</string>
     <string name="removed_favorite">Đã bỏ khỏi yêu thích: %1$s</string>
+    <string name="favorites_move_hint">Dùng phím mũi tên để di chuyển kênh, bấm OK để đặt xuống</string>
+    <string name="favorites_order_saved">Đã lưu thứ tự yêu thích</string>
     <string name="sidebar_header">DANH MỤC</string>
     <string name="brand_prefix">VN</string>
     <string name="brand_suffix">TV</string>

@@ -16,7 +16,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.VH> {
     public interface OnChannelClick {
@@ -59,20 +61,66 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.VH> {
     }
 
     private static final String NUMBER_PAYLOAD = "number";
+    private static final String FAVORITE_PAYLOAD = "favorite";
+    private static final String MOVING_PAYLOAD = "moving";
+    private Set<String> favoriteUrls = new HashSet<>();
+    private int movingPosition = RecyclerView.NO_POSITION;
 
     /** Re-labels channel numbers in place; a full rebind would drop D-pad focus. */
     public void refreshNumbers() {
         notifyItemRangeChanged(0, channels.size(), NUMBER_PAYLOAD);
     }
 
+    /** Saved favorite URLs; tiles of favorited channels show a star. Updated in place. */
+    public void setFavoriteUrls(Set<String> urls) {
+        if (urls.equals(favoriteUrls)) return;
+        favoriteUrls = new HashSet<>(urls);
+        notifyItemRangeChanged(0, channels.size(), FAVORITE_PAYLOAD);
+    }
+
+    /** Marks the tile being reordered (NO_POSITION for none). */
+    public void setMovingPosition(int position) {
+        int previous = movingPosition;
+        movingPosition = position;
+        if (previous != RecyclerView.NO_POSITION) notifyItemChanged(previous, MOVING_PAYLOAD);
+        if (position != RecyclerView.NO_POSITION) notifyItemChanged(position, MOVING_PAYLOAD);
+    }
+
+    /** Moves an item in place, so its view (and the D-pad focus on it) travels with it. */
+    public void moveItem(int from, int to) {
+        channels.add(to, channels.remove(from));
+        if (movingPosition == from) movingPosition = to;
+        notifyItemMoved(from, to);
+    }
+
+    public List<Channel> getChannels() {
+        return channels;
+    }
+
+    private boolean isFavorite(Channel c) {
+        for (String url : c.allUrls()) {
+            if (favoriteUrls.contains(url)) return true;
+        }
+        return false;
+    }
+
+    private void bindFavorite(VH holder, Channel c) {
+        if (holder.favorite != null) holder.favorite.setVisibility(isFavorite(c) ? View.VISIBLE : View.GONE);
+    }
+
     @Override
     public void onBindViewHolder(@NonNull VH holder, int position, @NonNull List<Object> payloads) {
-        if (payloads.contains(NUMBER_PAYLOAD)) {
-            int number = ChannelNumbers.numberOf(channels.get(position));
-            holder.number.setText(number > 0 ? String.valueOf(number) : "");
+        if (payloads.isEmpty()) {
+            onBindViewHolder(holder, position);
             return;
         }
-        onBindViewHolder(holder, position);
+        Channel c = channels.get(position);
+        if (payloads.contains(NUMBER_PAYLOAD)) {
+            int number = ChannelNumbers.numberOf(c);
+            holder.number.setText(number > 0 ? String.valueOf(number) : "");
+        }
+        if (payloads.contains(FAVORITE_PAYLOAD)) bindFavorite(holder, c);
+        if (payloads.contains(MOVING_PAYLOAD)) holder.itemView.setActivated(position == movingPosition);
     }
 
     public int getItemCountPublic() {
@@ -92,6 +140,8 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.VH> {
         holder.name.setText(c.name);
         int number = ChannelNumbers.numberOf(c);
         holder.number.setText(number > 0 ? String.valueOf(number) : "");
+        bindFavorite(holder, c);
+        holder.itemView.setActivated(position == movingPosition);
         holder.itemView.setOnClickListener(v -> listener.onClick(c));
         if (focusScale != 1f) {
             holder.itemView.setOnFocusChangeListener((v, hasFocus) -> {
@@ -157,12 +207,14 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.VH> {
         TextView number;
         TextView quality;
         ImageView logo;
+        ImageView favorite;
         boolean longPressTriggered;
         Runnable longPressRunnable;
         VH(View itemView) {
             super(itemView);
             name = itemView.findViewById(R.id.channel_name);
             number = itemView.findViewById(R.id.channel_number);
+            favorite = itemView.findViewById(R.id.channel_favorite);
             quality = itemView.findViewById(R.id.channel_quality);
             logo = itemView.findViewById(R.id.channel_logo);
         }
