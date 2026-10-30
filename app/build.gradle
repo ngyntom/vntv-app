@@ -21,6 +21,12 @@ android {
         debug { }
     }
 
+    // AGP 8 stopped generating BuildConfig by default; MainActivity reads VERSION_NAME from
+    // it for the build stamp shown under the logo.
+    buildFeatures {
+        buildConfig true
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
