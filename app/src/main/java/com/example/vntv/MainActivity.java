@@ -68,6 +68,8 @@ public class MainActivity extends AppCompatActivity {
     private String shownCategory;
     /** Position of the favorite being reordered in the grid, or -1. */
     private int movingIndex = -1;
+    /** Position of the category being reordered in the sidebar, or -1. */
+    private int movingCategoryIndex = -1;
     /** Drops the key-up of the OK press that put a moved favorite down, so it doesn't open it. */
     private boolean swallowCenterUp = false;
     private NumberEntry numberEntry;
@@ -121,9 +123,12 @@ public class MainActivity extends AppCompatActivity {
     private void installCategoryAdapter(String selected) {
         int index = Math.max(0, categories.indexOf(selected));
         categoryAdapter = new CategoryAdapter(new ArrayList<>(categories), index, this::onCategorySelected);
+        categoryAdapter.setOnCategoryLongClickListener(this::onCategoryLongPress);
         // Focus navigation runs right after the key is dispatched, so a short window is enough
-        // to tell a user's D-pad move apart from focus the system hands out on its own.
-        categoryAdapter.setFocusSelectGate(() -> SystemClock.uptimeMillis() - lastNavKeyAt < 500);
+        // to tell a user's D-pad move apart from focus the system hands out on its own. While a
+        // category is picked up for reordering, moving the focus must not also switch category.
+        categoryAdapter.setFocusSelectGate(() -> movingCategoryIndex < 0
+                && SystemClock.uptimeMillis() - lastNavKeyAt < 500);
         categoryTabs.setAdapter(categoryAdapter);
     }
 
@@ -217,6 +222,7 @@ public class MainActivity extends AppCompatActivity {
         clock.stop();
         numberEntry.cancel();
         finishMovingFavorite();
+        finishMovingCategory();
     }
 
     @Override
@@ -329,6 +335,60 @@ public class MainActivity extends AppCompatActivity {
         }
         PlaylistStore.setFavorites(this, urls);
         Toast.makeText(this, R.string.favorites_order_saved, Toast.LENGTH_SHORT).show();
+    }
+
+    /** Hold OK on a sidebar row: pick that category up for reordering, like a favorite tile. */
+    private void onCategoryLongPress(String category) {
+        int index = categoryAdapter.indexOf(category);
+        if (index < 0) return;
+        movingCategoryIndex = index;
+        categoryAdapter.setMovingPosition(index);
+        Toast.makeText(this, R.string.categories_move_hint, Toast.LENGTH_LONG).show();
+    }
+
+    /**
+     * Keys while a category is picked up: Up/Down moves it one row, OK or Back puts it down.
+     * Every key of the gesture is consumed so nothing else (category switching, opening
+     * Settings) reacts to it.
+     */
+    private boolean handleCategoryMoveKey(KeyEvent event) {
+        int code = event.getKeyCode();
+        boolean center = code == KeyEvent.KEYCODE_DPAD_CENTER || code == KeyEvent.KEYCODE_ENTER;
+        boolean arrow = code == KeyEvent.KEYCODE_DPAD_UP || code == KeyEvent.KEYCODE_DPAD_DOWN
+                || code == KeyEvent.KEYCODE_DPAD_LEFT || code == KeyEvent.KEYCODE_DPAD_RIGHT;
+        if (event.getAction() == KeyEvent.ACTION_UP) return center || arrow || code == KeyEvent.KEYCODE_BACK;
+        if (code == KeyEvent.KEYCODE_BACK || (center && event.getRepeatCount() == 0)) {
+            // The OK still held from the long press only repeats; a fresh press puts it down.
+            finishMovingCategory();
+            if (center) swallowCenterUp = true;
+            return true;
+        }
+        // The sidebar only reorders vertically; Left/Right are swallowed so focus can't slip
+        // off into the grid while a row is picked up.
+        if (code != KeyEvent.KEYCODE_DPAD_UP && code != KeyEvent.KEYCODE_DPAD_DOWN) return true;
+        int to = code == KeyEvent.KEYCODE_DPAD_UP ? movingCategoryIndex - 1 : movingCategoryIndex + 1;
+        if (to < 0 || to >= categoryAdapter.getItemCount()) return true;
+        categoryAdapter.moveItem(movingCategoryIndex, to);
+        movingCategoryIndex = to;
+        // Saved on every step, so Back at any point keeps the order the user already sees.
+        categories = new ArrayList<>(categoryAdapter.getCategories());
+        Categories.save(this, categories);
+        categoryTabs.scrollToPosition(to);
+        categoryTabs.post(() -> {
+            RecyclerView.ViewHolder vh = categoryTabs.findViewHolderForAdapterPosition(to);
+            if (vh != null) vh.itemView.requestFocus();
+        });
+        return true;
+    }
+
+    /** Saves the sidebar order; this is the same list Settings' sort dialog edits. */
+    private void finishMovingCategory() {
+        if (movingCategoryIndex < 0) return;
+        movingCategoryIndex = -1;
+        categoryAdapter.setMovingPosition(RecyclerView.NO_POSITION);
+        categories = new ArrayList<>(categoryAdapter.getCategories());
+        Categories.save(this, categories);
+        Toast.makeText(this, R.string.categories_order_saved, Toast.LENGTH_SHORT).show();
     }
 
     private void toggleFavorite(Channel channel) {
@@ -680,6 +740,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         if (movingIndex >= 0 && handleMoveKey(event)) return true;
+        if (movingCategoryIndex >= 0 && handleCategoryMoveKey(event)) return true;
         if (swallowCenterUp && event.getAction() == KeyEvent.ACTION_UP
                 && (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_CENTER || event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
             swallowCenterUp = false;

@@ -9,6 +9,8 @@
     <string name="removed_favorite">Đã bỏ khỏi yêu thích: %1$s</string>
     <string name="favorites_move_hint">Dùng phím mũi tên để di chuyển kênh, bấm OK để đặt xuống</string>
     <string name="favorites_order_saved">Đã lưu thứ tự yêu thích</string>
+    <string name="categories_move_hint">Dùng phím lên/xuống để di chuyển danh mục, bấm OK để đặt xuống</string>
+    <string name="categories_order_saved">Đã lưu thứ tự danh mục</string>
     <string name="sidebar_header">DANH MỤC</string>
     <string name="brand_prefix">VN</string>
     <string name="brand_suffix">TV</string>
