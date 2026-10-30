@@ -609,6 +609,13 @@ public class MainActivity extends AppCompatActivity {
                     lastNavKeyAt = SystemClock.uptimeMillis();
                     break;
             }
+            if ((event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN || event.getKeyCode() == KeyEvent.KEYCODE_DPAD_UP)
+                    && leavingGridVertically(event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN
+                            ? View.FOCUS_DOWN : View.FOCUS_UP)) {
+                // Past the grid's first or last row Android would hop to the nearest sidebar
+                // row (switching category) or the settings icon; stay on the edge row instead.
+                return true;
+            }
             if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_LEFT && leavingGridToSidebar()) {
                 // Android would pick the sidebar row nearest the tile's height, and that row's
                 // focus-preview would switch category; go back to the selected one instead.
@@ -617,6 +624,13 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         return super.dispatchKeyEvent(event);
+    }
+
+    private boolean leavingGridVertically(int direction) {
+        View focused = getCurrentFocus();
+        if (focused == null || !isInside(focused, channelGrid)) return false;
+        View next = focused.focusSearch(direction);
+        return next != null && !isInside(next, channelGrid);
     }
 
     private boolean leavingGridToSidebar() {
