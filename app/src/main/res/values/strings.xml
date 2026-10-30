@@ -13,6 +13,7 @@
     <string name="categories_order_saved">Đã lưu thứ tự danh mục</string>
     <string name="brand_prefix">VN</string>
     <string name="brand_suffix">TV</string>
+    <string name="version_label">v%1$s</string>
     <string name="overlay_header">DANH SÁCH KÊNH</string>
     <string name="overlay_count">%1$d kênh</string>
     <string name="no_channel_number">Không có kênh %1$d</string>

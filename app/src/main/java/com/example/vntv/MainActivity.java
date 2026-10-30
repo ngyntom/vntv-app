@@ -95,6 +95,10 @@ public class MainActivity extends AppCompatActivity {
 
         findViewById(R.id.settings_button).setOnClickListener(v ->
                 startActivity(new Intent(this, SettingsActivity.class)));
+        // Build stamp under the logo: with per-build signing keys this is the quick way to
+        // tell which build a box is actually running.
+        ((TextView) findViewById(R.id.app_version))
+                .setText(getString(R.string.version_label, BuildConfig.VERSION_NAME));
         deadChannels = PlaylistStore.getDeadChannels(this);
         categories = loadCategories();
         // Default landing tab: Tổng hợp (Favorites is usually empty on first run).

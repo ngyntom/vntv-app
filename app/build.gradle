@@ -11,7 +11,10 @@ android {
         minSdk 21
         targetSdk 34
         versionCode 1
-        versionName "1.0"
+        // Debug-only convenience: every CI run is signed with a different key, so the stamp in
+        // versionName (shown under the logo) is how two boxes get told apart at a glance.
+        def buildStamp = java.time.LocalDateTime.now(java.time.ZoneId.of('Asia/Ho_Chi_Minh')).format(java.time.format.DateTimeFormatter.ofPattern('yyMMdd.HHmm'))
+        versionName "1.0-$buildStamp"
     }
 
     buildTypes {
