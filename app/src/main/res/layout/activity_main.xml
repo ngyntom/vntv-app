@@ -60,20 +60,12 @@
             android:layout_marginHorizontal="22dp"
             android:background="@color/divider" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/sidebar_header"
-            style="@style/TextAppearance.VnTv.SectionLabel"
-            android:paddingHorizontal="24dp"
-            android:paddingTop="18dp"
-            android:paddingBottom="8dp" />
-
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/category_tabs"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
+            android:paddingTop="8dp"
             android:clipToPadding="false" />
     </LinearLayout>
 

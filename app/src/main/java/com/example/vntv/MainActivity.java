@@ -70,6 +70,8 @@ public class MainActivity extends AppCompatActivity {
     private int movingIndex = -1;
     /** Position of the category being reordered in the sidebar, or -1. */
     private int movingCategoryIndex = -1;
+    /** Back was used to step out of the grid; swallow its key-up so it can't also exit. */
+    private boolean swallowBackUp;
     /** Drops the key-up of the OK press that put a moved favorite down, so it doesn't open it. */
     private boolean swallowCenterUp = false;
     private NumberEntry numberEntry;
@@ -745,6 +747,26 @@ public class MainActivity extends AppCompatActivity {
                 && (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_CENTER || event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
             swallowCenterUp = false;
             return true;
+        }
+        if (event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
+            // Back from a highlighted-but-unopened tile steps out to the sidebar, like a TV
+            // menu, instead of closing the app; a second Back (focus already outside the grid)
+            // is left to the system.
+            if (swallowBackUp) {
+                // Also eats the press repeats, which would otherwise exit now that the focus
+                // has already moved off the grid.
+                if (event.getAction() == KeyEvent.ACTION_UP) swallowBackUp = false;
+                return true;
+            }
+            if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                View focused = getCurrentFocus();
+                if (focused != null && isInside(focused, channelGrid)) {
+                    numberEntry.cancel();
+                    focusSelectedCategoryRow();
+                    swallowBackUp = true;
+                    return true;
+                }
+            }
         }
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
             switch (event.getKeyCode()) {
