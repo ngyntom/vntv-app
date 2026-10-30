@@ -350,6 +350,9 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
             fetchPool.shutdown();
+            // International sports come after every Vietnamese channel so they take the next
+            // numbers instead of shifting existing ones.
+            fetched.addAll(loadAssetChannels("sports.m3u"));
             // Last-resort extra links: merged in after the playlists, so they only ever add
             // fallbacks and never move a channel (or its number).
             fetched.addAll(loadAssetChannels("extra.m3u"));
@@ -522,6 +525,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private String classify(Channel c) {
+        // The bundled international sports list tags its channels with this group.
+        if (Categories.SPORTS.equals(c.groupTitle)) return Categories.SPORTS;
         String upper = ChannelMerger.stripDiacritics(c.name).toUpperCase();
         // VTVcab's channels are branded "ON ..." (ON Cine, ON Kids, ...); checked before VTV.
         if (upper.startsWith("ON ") || upper.contains("VTVCAB")) return CAT_VTVCAB;

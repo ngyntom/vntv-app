@@ -15,9 +15,10 @@ public final class Categories {
     public static final String HTV = "HTV";
     public static final String VTV = "VTV";
     public static final String VTVCAB = "VTVcab";
+    public static final String SPORTS = "Thể thao";
 
     public static final List<String> DEFAULT_ORDER =
-            Arrays.asList(FAVORITES, OTHER, SCTV, THVL, HTV, VTV, VTVCAB);
+            Arrays.asList(FAVORITES, OTHER, SCTV, THVL, HTV, VTV, VTVCAB, SPORTS);
 
     private Categories() {}
 

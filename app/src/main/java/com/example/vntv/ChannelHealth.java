@@ -22,6 +22,8 @@ public final class ChannelHealth {
             "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36";
     private static final int TIMEOUT_MS = 6000;
     private static final int PARALLEL = 16;
+    private static final int RETRY_PARALLEL = 4;
+    private static final long RETRY_DELAY_MS = 2000;
 
     public static final class Result {
         /** streamUrl of each channel with no working link. */
@@ -34,23 +36,39 @@ public final class ChannelHealth {
 
     /** Blocking; run off the main thread. */
     public static Result check(Context ctx, List<Channel> channels) {
-        ExecutorService pool = Executors.newFixedThreadPool(PARALLEL);
+        Result result = new Result();
+        List<Channel> failed = probe(ctx, channels, PARALLEL, result);
+        if (!failed.isEmpty()) {
+            // Many channels share a host (e.g. dethich.pw) that drops some requests when hit
+            // with a burst; give the failures a slower second chance before calling them dead.
+            try {
+                Thread.sleep(RETRY_DELAY_MS);
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }
+            for (Channel c : probe(ctx, failed, RETRY_PARALLEL, result)) result.dead.add(c.streamUrl);
+        }
+        return result;
+    }
+
+    /** Records working channels in result.alive and returns the ones with no working link. */
+    private static List<Channel> probe(Context ctx, List<Channel> channels, int parallel, Result result) {
+        ExecutorService pool = Executors.newFixedThreadPool(parallel);
         List<Future<String>> futures = new ArrayList<>();
         for (Channel c : channels) futures.add(pool.submit(() -> firstAlive(ctx, c)));
-        Result result = new Result();
+        List<Channel> failed = new ArrayList<>();
         for (int i = 0; i < channels.size(); i++) {
-            String key = channels.get(i).streamUrl;
             String url = null;
             try {
                 url = futures.get(i).get();
             } catch (Exception ignored) {
-                // Counts as dead, same as a link that didn't answer.
+                // Same as a link that didn't answer.
             }
-            if (url == null) result.dead.add(key);
-            else result.alive.put(key, url);
+            if (url == null) failed.add(channels.get(i));
+            else result.alive.put(channels.get(i).streamUrl, url);
         }
         pool.shutdown();
-        return result;
+        return failed;
     }
 
     /** Tries the link that last played first, then the rest in order. */
