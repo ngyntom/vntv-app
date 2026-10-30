@@ -65,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
     private ClockBinder clock;
     /** streamUrls of channels with no working link; hidden everywhere until a check finds them alive. */
     private Set<String> deadChannels = new HashSet<>();
+    private String shownCategory;
     private NumberEntry numberEntry;
 
     @Override
@@ -559,8 +560,13 @@ public class MainActivity extends AppCompatActivity {
         // "Cannot call this method while RecyclerView is computing a layout or scrolling", which
         // crashed the whole app (and from the outside looked like Back dropping to Home - the
         // crash killed MainActivity before it could ever show). Posting it clears that window.
+        // A different category starts from its top; refreshes of the same one (favorite toggled,
+        // dead channels hidden) keep the user's place.
+        boolean newCategory = !category.equals(shownCategory);
+        shownCategory = category;
         mainHandler.post(() -> {
             adapter.setChannels(displayedChannels);
+            if (newCategory) channelGrid.scrollToPosition(0);
             if (afterApplied != null) afterApplied.run();
         });
         boolean showEmpty = filtered.isEmpty() && !allChannels.isEmpty();

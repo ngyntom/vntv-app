@@ -6,6 +6,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.PixelCopy;
@@ -22,6 +23,7 @@ import androidx.media3.common.Player;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.ui.PlayerView;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.LinearSmoothScroller;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
@@ -32,6 +34,7 @@ public class PlayerActivity extends AppCompatActivity {
     public static final String EXTRA_URL = "url";
     public static final String EXTRA_NAME = "name";
     public static final String EXTRA_INDEX = "index";
+    private static final int OVERLAY_LEAD_ROWS = 6;
 
     private ExoPlayer player;
     private PlayerView playerView;
@@ -185,18 +188,43 @@ public class PlayerActivity extends AppCompatActivity {
         if (!visible) return;
         overlayCount.setText(getString(R.string.overlay_count, channels.size()));
         if (currentIndex >= 0 && currentIndex < channels.size()) {
-            channelListOverlay.scrollToPosition(currentIndex);
-            channelListOverlay.post(() -> {
-                RecyclerView.ViewHolder vh = channelListOverlay.findViewHolderForAdapterPosition(currentIndex);
-                if (vh != null) {
-                    vh.itemView.requestFocus();
-                } else {
-                    channelListOverlay.requestFocus();
-                }
-            });
+            scrollOverlayTo(currentIndex);
         } else {
             channelListOverlay.requestFocus();
         }
+    }
+
+    /**
+     * Opens the list a few rows short of the playing channel, then glides it into the middle of
+     * the panel and only then puts focus on it (focusing mid-scroll would make the list jump).
+     */
+    private void scrollOverlayTo(int target) {
+        LinearLayoutManager lm = (LinearLayoutManager) channelListOverlay.getLayoutManager();
+        lm.scrollToPositionWithOffset(Math.max(0, target - OVERLAY_LEAD_ROWS), 0);
+        channelListOverlay.post(() -> {
+            LinearSmoothScroller scroller = new LinearSmoothScroller(this) {
+                @Override
+                public int calculateDtToFit(int viewStart, int viewEnd, int boxStart, int boxEnd, int snapPreference) {
+                    return (boxStart + (boxEnd - boxStart) / 2) - (viewStart + (viewEnd - viewStart) / 2);
+                }
+
+                @Override
+                protected float calculateSpeedPerPixel(DisplayMetrics displayMetrics) {
+                    return 60f / displayMetrics.densityDpi;
+                }
+
+                @Override
+                protected void onStop() {
+                    super.onStop();
+                    channelListOverlay.post(() -> {
+                        RecyclerView.ViewHolder vh = channelListOverlay.findViewHolderForAdapterPosition(target);
+                        if (vh != null && overlayVisible) vh.itemView.requestFocus();
+                    });
+                }
+            };
+            scroller.setTargetPosition(target);
+            lm.startSmoothScroll(scroller);
+        });
     }
 
     @Override
