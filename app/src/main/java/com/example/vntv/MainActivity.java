@@ -601,6 +601,10 @@ public class MainActivity extends AppCompatActivity {
         for (Channel c : allChannels) {
             if (c.hasUrl(url)) {
                 String category = classify(c);
+                // Watched from Yêu thích: come back to Yêu thích, as long as it's still a favorite.
+                if (CAT_FAVORITES.equals(shownCategory) && favoriteChannels().contains(c)) {
+                    category = CAT_FAVORITES;
+                }
                 int catIndex = categoryAdapter.indexOf(category);
                 if (catIndex < 0) return false;
                 categoryAdapter.setSelectedPosition(catIndex);
