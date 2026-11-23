@@ -206,7 +206,7 @@ public class SettingsActivity extends AppCompatActivity {
         row.setActivated(index == moving);
     }
 
-    /** Lists the playlist URLs plus an "add" entry; picking a URL asks to remove it. */
+    /** Lists the playlist URLs plus an "add" entry; picking a URL offers to edit or remove it. */
     private void showSources() {
         List<String> urls = PlaylistStore.getUrls(this);
         String[] items = new String[urls.size() + 1];
@@ -216,9 +216,23 @@ public class SettingsActivity extends AppCompatActivity {
                 .setTitle(R.string.sources_title)
                 .setItems(items, (dialog, which) -> {
                     if (which == urls.size()) {
-                        showAddSource();
+                        showSourceEditor(null);
                     } else {
-                        confirmRemoveSource(urls.get(which));
+                        showSourceActions(urls.get(which));
+                    }
+                })
+                .show();
+    }
+
+    private void showSourceActions(String url) {
+        String[] actions = {getString(R.string.sources_edit), getString(R.string.sources_remove)};
+        new AlertDialog.Builder(this)
+                .setTitle(url)
+                .setItems(actions, (dialog, which) -> {
+                    if (which == 0) {
+                        showSourceEditor(url);
+                    } else {
+                        confirmRemoveSource(url);
                     }
                 })
                 .show();
@@ -236,40 +250,62 @@ public class SettingsActivity extends AppCompatActivity {
                 .show();
     }
 
-    private void showAddSource() {
+    /** Text field for a playlist URL: a new one when existing is null, otherwise that one, prefilled. */
+    private void showSourceEditor(String existing) {
         TvEditText input = (TvEditText) LayoutInflater.from(this).inflate(R.layout.dialog_add_source, null, false);
+        if (existing != null) {
+            input.setText(existing);
+            input.setSelection(existing.length());
+        }
         FrameLayout wrapper = new FrameLayout(this);
         int pad = Math.round(24 * getResources().getDisplayMetrics().density);
         wrapper.setPadding(pad, pad / 2, pad, 0);
         wrapper.addView(input);
         AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(R.string.sources_add_title)
+                .setTitle(existing == null ? R.string.sources_add_title : R.string.sources_edit_title)
                 .setView(wrapper)
-                .setPositiveButton(R.string.add, (d, w) -> addSource(input.getText().toString()))
+                .setPositiveButton(existing == null ? R.string.add : R.string.save, null)
                 .setNegativeButton(R.string.no, null)
                 .create();
         input.setOnClickListener(v -> input.openKeyboard());
         input.setOnEditorActionListener((v, actionId, event) -> {
-            input.closeKeyboard();
-            addSource(input.getText().toString());
-            dialog.dismiss();
+            if (saveSource(existing, input.getText().toString())) {
+                input.closeKeyboard();
+                dialog.dismiss();
+            }
             return true;
         });
         // Gboard pops up on its own as the dialog's field takes focus; opening it ourselves too
         // keeps TvEditText in step, so the arrow keys reach the keyboard instead of the buttons.
-        dialog.setOnShowListener(d -> input.post(() -> {
-            input.requestFocus();
-            input.openKeyboard();
-        }));
+        dialog.setOnShowListener(d -> {
+            // Replaces the default close-on-click, so a mistyped link stays in the box to fix.
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                if (saveSource(existing, input.getText().toString())) dialog.dismiss();
+            });
+            input.post(() -> {
+                input.requestFocus();
+                input.openKeyboard();
+            });
+        });
         dialog.show();
     }
 
-    private void addSource(String raw) {
+    /** Adds or replaces a playlist URL; false (with a hint) when it isn't a usable link. */
+    private boolean saveSource(String existing, String raw) {
         String url = raw.trim();
-        if (TextUtils.isEmpty(url)) return;
-        PlaylistStore.addUrl(this, url);
+        if (TextUtils.isEmpty(url)) return existing == null;
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            Toast.makeText(this, R.string.url_invalid, Toast.LENGTH_LONG).show();
+            return false;
+        }
+        if (existing == null) {
+            PlaylistStore.addUrl(this, url);
+        } else {
+            PlaylistStore.replaceUrl(this, existing, url);
+        }
         refreshValues();
-        Toast.makeText(this, R.string.added, Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, existing == null ? R.string.added : R.string.saved, Toast.LENGTH_SHORT).show();
+        return true;
     }
 
     private void toggleHome() {

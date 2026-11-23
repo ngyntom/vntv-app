@@ -208,6 +208,19 @@ public class PlaylistStore {
         }
     }
 
+    /** Swaps a playlist URL in place, so a corrected link keeps its spot (and merge priority). */
+    public static void replaceUrl(Context ctx, String oldUrl, String newUrl) {
+        List<String> urls = getUrls(ctx);
+        int index = urls.indexOf(oldUrl);
+        if (index < 0 || oldUrl.equals(newUrl)) return;
+        if (urls.contains(newUrl)) {
+            urls.remove(index);
+        } else {
+            urls.set(index, newUrl);
+        }
+        saveUrls(ctx, urls);
+    }
+
     public static void removeUrl(Context ctx, String url) {
         List<String> urls = getUrls(ctx);
         urls.remove(url);

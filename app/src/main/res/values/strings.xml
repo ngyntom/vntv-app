@@ -46,8 +46,14 @@
 
     <string name="sources_title">Nguồn danh sách kênh</string>
     <string name="sources_value">%1$d nguồn</string>
-    <string name="sources_desc">Các danh sách kênh (link .m3u) mà app tải về và gộp lại.\n\nBấm OK để thêm nguồn mới hoặc xoá nguồn.</string>
+    <string name="sources_desc">Các danh sách kênh (link .m3u) mà app tải về và gộp lại.\n\nBấm OK để thêm nguồn mới, sửa hoặc xoá nguồn.</string>
     <string name="sources_add">+ Thêm nguồn mới</string>
+    <string name="sources_edit">Sửa link</string>
+    <string name="sources_remove">Xoá nguồn</string>
+    <string name="sources_edit_title">Sửa link nguồn</string>
+    <string name="url_invalid">Link phải bắt đầu bằng http:// hoặc https://</string>
+    <string name="save">Lưu</string>
+    <string name="saved">Đã lưu link</string>
     <string name="sources_remove_confirm">Xoá nguồn này?\n\n%1$s</string>
     <string name="sources_add_title">Thêm nguồn kênh</string>
     <string name="url_hint">Dán link .m3u / .m3u8</string>
