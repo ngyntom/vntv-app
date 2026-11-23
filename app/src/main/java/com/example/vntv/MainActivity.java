@@ -59,6 +59,10 @@ public class MainActivity extends AppCompatActivity {
     private List<Channel> displayedChannels = new ArrayList<>();
     private boolean autoLaunched = false;
     private boolean loading = false;
+    /** Sources the current list was loaded from; Settings changing them triggers a reload. */
+    private List<String> loadedUrls;
+    /** Set once a list has been reloaded after a source change, so it never auto-plays. */
+    private boolean sourcesReloaded = false;
     private long lastNavKeyAt = 0;
     private boolean pendingHotkey = false;
     private static boolean instantResumeDone = false;
@@ -237,6 +241,10 @@ public class MainActivity extends AppCompatActivity {
         clock.start();
         if (allChannels.isEmpty()) {
             loadChannels();
+        } else if (!PlaylistStore.getUrls(this).equals(loadedUrls)) {
+            // A source was added or removed in Settings: show its channels right away.
+            loadChannels();
+            applyCategoryOrderIfChanged();
         } else {
             applyCategoryOrderIfChanged();
             updateCategoryCounts();
@@ -469,14 +477,20 @@ public class MainActivity extends AppCompatActivity {
         // each other and against the sidebar sync each one does once it completes.
         if (loading) return;
         loading = true;
+        List<String> urls = PlaylistStore.getUrls(this);
+        loadedUrls = urls;
+        // A reload after the sources changed already has the old list on screen.
+        boolean reload = !allChannels.isEmpty();
         emptyView.setVisibility(View.GONE);
         executor.execute(() -> {
             // Cached copy from last time, read off disk - near-instant, so the grid (or an
             // instant-resume lookup) doesn't have to sit on the network fetch below just to
             // show something. It's posted on its own, separately from the fetch, so the UI
             // updates the moment this is ready instead of waiting for both.
-            List<Channel> cached = ChannelCache.load(this);
-            if (!cached.isEmpty()) {
+            List<Channel> cached = reload ? allChannels : ChannelCache.load(this);
+            if (reload) {
+                mainHandler.post(() -> progressBar.setVisibility(View.VISIBLE));
+            } else if (!cached.isEmpty()) {
                 mainHandler.post(() -> applyLoadedChannels(cached, false));
             } else {
                 mainHandler.post(() -> progressBar.setVisibility(View.VISIBLE));
@@ -484,17 +498,19 @@ public class MainActivity extends AppCompatActivity {
 
             // Fetched in parallel so adding playlists doesn't stack up their download times;
             // results are still combined in the configured order, which decides merge priority.
-            List<String> urls = PlaylistStore.getUrls(this);
             ExecutorService fetchPool = Executors.newFixedThreadPool(urls.size());
             List<Future<List<Channel>>> fetches = new ArrayList<>();
             for (String url : urls) fetches.add(fetchPool.submit(() -> fetchPlaylist(url)));
             // Bundled VTV list goes first so its 720p streams lead and the playlists' VTV links
             // become fallbacks; it's also what keeps VTV3/6/8 alive when both playlists' are dead.
             List<Channel> fetched = new ArrayList<>(loadAssetChannels("vtv.m3u"));
+            List<Channel> userAdded = new ArrayList<>();
             boolean anyFetched = false;
             for (int i = 0; i < fetches.size(); i++) {
                 try {
-                    fetched.addAll(fetches.get(i).get());
+                    List<Channel> list = fetches.get(i).get();
+                    if (PlaylistStore.isDefaultUrl(urls.get(i))) fetched.addAll(list);
+                    else userAdded.addAll(list);
                     anyFetched = true;
                 } catch (Exception e) {
                     Log.w(TAG, "failed to load " + urls.get(i), e);
@@ -507,6 +523,9 @@ public class MainActivity extends AppCompatActivity {
             // Last-resort extra links: merged in after the playlists, so they only ever add
             // fallbacks and never move a channel (or its number).
             fetched.addAll(loadAssetChannels("extra.m3u"));
+            // Playlists added in Settings go last: a channel that already exists just gains
+            // their link as a fallback, and new ones are numbered after everything bundled.
+            fetched.addAll(userAdded);
             // Offline, the bundled VTV list alone would replace the last full list on disk and
             // in the grid; only take the result when at least one playlist actually came in.
             List<Channel> all = anyFetched || cached.isEmpty()
@@ -518,6 +537,8 @@ public class MainActivity extends AppCompatActivity {
                 loading = false;
                 progressBar.setVisibility(View.GONE);
                 if (!all.isEmpty()) {
+                    // Nothing to auto-play on a reload: the user is on the menu, not starting up.
+                    if (reload) sourcesReloaded = true;
                     applyLoadedChannels(all, true);
                 } else if (allChannels.isEmpty()) {
                     emptyView.setVisibility(View.VISIBLE);
@@ -539,7 +560,8 @@ public class MainActivity extends AppCompatActivity {
         if (ChannelNumbers.set(channels)) mainHandler.post(() -> adapter.refreshNumbers());
         updateCategoryCounts();
         if (pendingHotkey && consumeHotkey()) return;
-        boolean launched = finishInstantResume(channels) || maybeAutoResume(channels);
+        boolean launched = !sourcesReloaded
+                && (finishInstantResume(channels) || maybeAutoResume(channels));
         if (launched) return;
         if (isNetwork && !autoLaunched) {
             PlaylistStore.setOnMenu(this, true);

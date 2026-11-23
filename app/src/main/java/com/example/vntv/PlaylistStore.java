@@ -195,6 +195,11 @@ public class PlaylistStore {
         return urls;
     }
 
+    /** True for the playlists the app ships with, false for ones the user added in Settings. */
+    public static boolean isDefaultUrl(String url) {
+        return DEFAULT_URLS.contains(url);
+    }
+
     public static void addUrl(Context ctx, String url) {
         List<String> urls = getUrls(ctx);
         if (!urls.contains(url)) {

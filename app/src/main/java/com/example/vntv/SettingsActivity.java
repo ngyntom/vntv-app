@@ -255,6 +255,12 @@ public class SettingsActivity extends AppCompatActivity {
             dialog.dismiss();
             return true;
         });
+        // Gboard pops up on its own as the dialog's field takes focus; opening it ourselves too
+        // keeps TvEditText in step, so the arrow keys reach the keyboard instead of the buttons.
+        dialog.setOnShowListener(d -> input.post(() -> {
+            input.requestFocus();
+            input.openKeyboard();
+        }));
         dialog.show();
     }
 

@@ -2,6 +2,8 @@ package com.example.vntv;
 
 import android.content.Context;
 import android.graphics.Rect;
+import android.os.Bundle;
+import android.os.ResultReceiver;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
 import android.view.View;
@@ -25,7 +27,16 @@ public class TvEditText extends AppCompatEditText {
     public void openKeyboard() {
         keyboardOpen = true;
         InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-        if (imm != null) imm.showSoftInput(this, 0);
+        if (imm == null) return;
+        // Trust what the keyboard reports rather than assuming: if it didn't actually come up,
+        // the arrow keys must keep moving focus or the field traps them.
+        imm.showSoftInput(this, 0, new ResultReceiver(getHandler()) {
+            @Override
+            protected void onReceiveResult(int resultCode, Bundle resultData) {
+                keyboardOpen = resultCode == InputMethodManager.RESULT_SHOWN
+                        || resultCode == InputMethodManager.RESULT_UNCHANGED_SHOWN;
+            }
+        });
     }
 
     public void closeKeyboard() {
